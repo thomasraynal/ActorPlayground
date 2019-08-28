@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground
 {
-    public interface IRootContext : ISpawnerContext, ISenderContext, IStopperContext
-    {
-    }
+
 
     public class RootContext : IRootContext
     {

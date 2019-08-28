@@ -6,11 +6,9 @@ namespace ActorPlayground
 {
     public class Failure : SystemMessage
     {
-        private PID self;
-
-        public Failure(PID self, Exception reason, object message)
+        public Failure(PID who, Exception reason, object message)
         {
-            this.self = self;
+            Who = who;
             Reason = reason;
             Message = message;
         }

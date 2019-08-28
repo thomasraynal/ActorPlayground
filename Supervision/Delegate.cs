@@ -4,6 +4,6 @@ using System.Text;
 
 namespace ActorPlayground
 {
-    public interface INotInfluenceReceiveTimeout
-    { }
+    public delegate SupervisorDirective Decider(PID pid, Exception reason);
+
 }

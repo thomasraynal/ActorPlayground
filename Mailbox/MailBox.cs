@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -6,37 +7,11 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground
 {
-    internal static class MailboxStatus
-    {
-        public const int Idle = 0;
-        public const int Busy = 1;
-    }
-
-    public interface IMailbox
-    {
-        void PostUserMessage(object msg);
-        void PostSystemMessage(object msg);
-        void RegisterHandlers(IMessageInvoker invoker, IDispatcher dispatcher);
-        void Start();
-    }
-
-    public static class BoundedMailbox
-    {
-        public static IMailbox Create(int size, params IMailboxStatistics[] stats) => new DefaultMailbox(new UnboundedMailboxQueue(), new UnboundedMailboxQueue(), stats);
-    }
-
-    public static class UnboundedMailbox
-    {
-        public static IMailbox Create(params IMailboxStatistics[] stats) => new DefaultMailbox(new UnboundedMailboxQueue(), new UnboundedMailboxQueue(), stats);
-    }
 
     internal class DefaultMailbox : IMailbox
     {
-        private readonly IMailboxStatistics[] _stats;
-        private readonly IMailboxQueue _systemMessages;
-        private readonly IMailboxQueue _userMailbox;
-        private IDispatcher _dispatcher;
-        private IMessageInvoker _invoker;
+        private readonly ConcurrentQueue<object> _systemMessages;
+        private readonly ConcurrentQueue<object> _userMailbox;
 
         private int _status = MailboxStatus.Idle;
         private long _systemMessageCount;
@@ -44,46 +19,36 @@ namespace ActorPlayground
 
         internal int Status => _status;
 
-        public DefaultMailbox(IMailboxQueue systemMessages, IMailboxQueue userMailbox, params IMailboxStatistics[] stats)
+        public IMessageInvoker Invoker { get; private set; }
+        public IDispatcher Dispatcher { get; private set; }
+
+        public DefaultMailbox()
         {
-            _systemMessages = systemMessages;
-            _userMailbox = userMailbox;
-            _stats = stats ?? new IMailboxStatistics[0];
+            _systemMessages = new ConcurrentQueue<object>();
+            _userMailbox = new ConcurrentQueue<object>();
         }
 
         public void PostUserMessage(object msg)
         {
-            _userMailbox.Push(msg);
-            foreach (var t in _stats)
-            {
-                t.MessagePosted(msg);
-            }
+            _userMailbox.Enqueue(msg);
             Schedule();
         }
 
         public void PostSystemMessage(object msg)
         {
-            _systemMessages.Push(msg);
+            _systemMessages.Enqueue(msg);
             Interlocked.Increment(ref _systemMessageCount);
-            foreach (var t in _stats)
-            {
-                t.MessagePosted(msg);
-            }
             Schedule();
         }
 
         public void RegisterHandlers(IMessageInvoker invoker, IDispatcher dispatcher)
         {
-            _invoker = invoker;
-            _dispatcher = dispatcher;
+            Invoker = invoker;
+            Dispatcher = dispatcher;
         }
 
         public void Start()
         {
-            foreach (var t in _stats)
-            {
-                t.MailboxStarted();
-            }
         }
 
         private Task RunAsync()
@@ -96,17 +61,11 @@ namespace ActorPlayground
 
             Interlocked.Exchange(ref _status, MailboxStatus.Idle);
 
-            if (_systemMessages.HasMessages || !_suspended && _userMailbox.HasMessages)
+            if (_systemMessages.IsEmpty || !_suspended && _userMailbox.IsEmpty)
             {
                 Schedule();
             }
-            else
-            {
-                foreach (var t in _stats)
-                {
-                    t.MailboxEmpty();
-                }
-            }
+
             return Task.FromResult(0);
         }
 
@@ -115,17 +74,17 @@ namespace ActorPlayground
             object msg = null;
             try
             {
-                for (var i = 0; i < _dispatcher.Throughput; i++)
+                for (var i = 0; i < Dispatcher.Throughput; i++)
                 {
-                    if (Interlocked.Read(ref _systemMessageCount) > 0 && (msg = _systemMessages.Pop()) != null)
+                    if (Interlocked.Read(ref _systemMessageCount) > 0 && _systemMessages.TryDequeue(out msg))
                     {
                         Interlocked.Decrement(ref _systemMessageCount);
             
     
-                        var t = _invoker.InvokeSystemMessageAsync(msg);
+                        var t = Invoker.InvokeSystemMessageAsync(msg);
                         if (t.IsFaulted)
                         {
-                            _invoker.EscalateFailure(t.Exception, msg);
+                            Invoker.EscalateFailure(t.Exception,  msg);
                             continue;
                         }
                         if (!t.IsCompleted)
@@ -133,10 +92,6 @@ namespace ActorPlayground
                             // if task didn't complete immediately, halt processing and reschedule a new run when task completes
                             t.ContinueWith(RescheduleOnTaskComplete, msg);
                             return false;
-                        }
-                        foreach (var t1 in _stats)
-                        {
-                            t1.MessageReceived(msg);
                         }
                         continue;
                     }
@@ -144,12 +99,12 @@ namespace ActorPlayground
                     {
                         break;
                     }
-                    if ((msg = _userMailbox.Pop()) != null)
+                    if (_userMailbox.TryDequeue(out msg))
                     {
-                        var t = _invoker.InvokeUserMessageAsync(msg);
+                        var t = Invoker.InvokeUserMessageAsync(msg);
                         if (t.IsFaulted)
                         {
-                            _invoker.EscalateFailure(t.Exception, msg);
+                            Invoker.EscalateFailure(t.Exception, msg);
                             continue;
                         }
                         if (!t.IsCompleted)
@@ -157,10 +112,6 @@ namespace ActorPlayground
                             // if task didn't complete immediately, halt processing and reschedule a new run when task completes
                             t.ContinueWith(RescheduleOnTaskComplete, msg);
                             return false;
-                        }
-                        foreach (var t1 in _stats)
-                        {
-                            t1.MessageReceived(msg);
                         }
                     }
                     else
@@ -171,7 +122,7 @@ namespace ActorPlayground
             }
             catch (Exception e)
             {
-                _invoker.EscalateFailure(e, msg);
+                Invoker.EscalateFailure(e, msg);
             }
             return true;
         }
@@ -180,48 +131,18 @@ namespace ActorPlayground
         {
             if (task.IsFaulted)
             {
-                _invoker.EscalateFailure(task.Exception, message);
+                Invoker.EscalateFailure(task.Exception, message);
             }
-            else
-            {
-                foreach (var t in _stats)
-                {
-                    t.MessageReceived(message);
-                }
-            }
-            _dispatcher.Schedule(RunAsync);
-        }
 
+            Dispatcher.Schedule(RunAsync);
+        }
 
         protected void Schedule()
         {
             if (Interlocked.CompareExchange(ref _status, MailboxStatus.Busy, MailboxStatus.Idle) == MailboxStatus.Idle)
             {
-                _dispatcher.Schedule(RunAsync);
+                Dispatcher.Schedule(RunAsync);
             }
         }
-    }
-
-    /// <summary>
-    /// Extension point for getting notifications about mailbox events
-    /// </summary>
-    public interface IMailboxStatistics
-    {
-        /// <summary>
-        /// This method is invoked when the mailbox is started
-        /// </summary>
-        void MailboxStarted();
-        /// <summary>
-        /// This method is invoked when a message is posted to the mailbox.
-        /// </summary>
-        void MessagePosted(object message);
-        /// <summary>
-        /// This method is invoked when a message has been received by the invoker associated with the mailbox.
-        /// </summary>
-        void MessageReceived(object message);
-        /// <summary>
-        /// This method is invoked when all messages in the mailbox have been received.
-        /// </summary>
-        void MailboxEmpty();
     }
 }

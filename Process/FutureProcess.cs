@@ -39,8 +39,6 @@ namespace ActorPlayground
 
             Pid = pid;
 
-
-
             if (_cts != null)
             {
                 _cts.Token.Register(() =>

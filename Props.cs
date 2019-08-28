@@ -31,18 +31,14 @@ namespace ActorPlayground
         public IList<Func<Sender, Sender>> SenderMiddleware { get; private set; } = new List<Func<Sender, Sender>>();
         public Receiver ReceiverMiddlewareChain { get; private set; }
         public Sender SenderMiddlewareChain { get; private set; }
-        public IList<Func<IContext, IContext>> ContextDecorator { get; private set; } = new List<Func<IContext, IContext>>();
-        public Func<IContext, IContext> ContextDecoratorChain { get; private set; } = DefaultContextDecorator;
-
+ 
         public Spawner Spawner
         {
             get => _spawner ?? DefaultSpawner;
             private set => _spawner = value;
         }
 
-        private static IContext DefaultContextDecorator(IContext context) => context;
-
-        private static IMailbox ProduceDefaultMailbox() => UnboundedMailbox.Create();
+        private static IMailbox ProduceDefaultMailbox() => new DefaultMailbox();
 
         private static PID DefaultSpawner(string name, Props props, PID parent)
         {
@@ -68,13 +64,6 @@ namespace ActorPlayground
         public Props WithDispatcher(IDispatcher dispatcher) => Copy(props => props.Dispatcher = dispatcher);
 
         public Props WithMailbox(Func<IMailbox> mailboxProducer) => Copy(props => props.MailboxProducer = mailboxProducer);
-
-        public Props WithContextDecorator(params Func<IContext, IContext>[] contextDecorator) => Copy(props =>
-        {
-            props.ContextDecorator = ContextDecorator.Concat(contextDecorator).ToList();
-            props.ContextDecoratorChain = props.ContextDecorator.Reverse()
-                                               .Aggregate((Func<IContext, IContext>)DefaultContextDecorator, (inner, outer) => ctx => outer(inner(ctx)));
-        });
 
         public Props WithGuardianSupervisorStrategy(ISupervisorStrategy guardianStrategy) => Copy(props => props.GuardianStrategy = guardianStrategy);
 
@@ -109,9 +98,7 @@ namespace ActorPlayground
                 SenderMiddlewareChain = SenderMiddlewareChain,
                 Spawner = Spawner,
                 SupervisorStrategy = SupervisorStrategy,
-                GuardianStrategy = GuardianStrategy,
-                ContextDecorator = ContextDecorator,
-                ContextDecoratorChain = ContextDecoratorChain,
+                GuardianStrategy = GuardianStrategy
             };
             mutator(props);
             return props;

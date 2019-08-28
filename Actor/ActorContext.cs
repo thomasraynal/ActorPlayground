@@ -9,27 +9,17 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground
 {
-    internal enum ContextState : byte
-    {
-        Alive,
-        Restarting,
-        Stopping,
-        Stopped,
-    }
 
-    //Angels cry over this code, but it serves a purpose, lazily init of less frequently used features
-    public class ActorContextExtras
+    public class ActorContext : IMessageInvoker, IContext, ISupervisor
     {
-        public ImmutableHashSet<PID> Children { get; private set; } = ImmutableHashSet<PID>.Empty;
+        public static readonly ImmutableHashSet<PID> EmptyChildren = ImmutableHashSet<PID>.Empty;
+        private readonly Props _props;
+
+        private object _messageOrEnvelope;
+        private ContextState _state;
+
+        public IImmutableSet<PID> Children { get; private set; } = ImmutableHashSet<PID>.Empty;
         public Timer ReceiveTimeoutTimer { get; private set; }
-        public Stack<object> Stash { get; } = new Stack<object>();
-        public ImmutableHashSet<PID> Watchers { get; private set; } = ImmutableHashSet<PID>.Empty;
-        public IContext Context { get; }
-
-        public ActorContextExtras(IContext context)
-        {
-            Context = context;
-        }
 
         public void InitReceiveTimeoutTimer(Timer timer) => ReceiveTimeoutTimer = timer;
 
@@ -37,7 +27,7 @@ namespace ActorPlayground
 
         public void StopReceiveTimeoutTimer() => ReceiveTimeoutTimer?.Change(-1, -1);
 
-        public void KillreceiveTimeoutTimer()
+        public void KillReceiveTimeoutTimer()
         {
             ReceiveTimeoutTimer.Dispose();
             ReceiveTimeoutTimer = null;
@@ -46,42 +36,6 @@ namespace ActorPlayground
         public void AddChild(PID pid) => Children = Children.Add(pid);
 
         public void RemoveChild(PID msgWho) => Children = Children.Remove(msgWho);
-
-        public void Watch(PID watcher)
-        {
-            Watchers = Watchers.Add(watcher);
-        }
-
-        public void Unwatch(PID watcher)
-        {
-            Watchers = Watchers.Remove(watcher);
-        }
-
-        internal void RemoveChild(object who)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class ActorContext : IMessageInvoker, IContext, ISupervisor
-    {
-        public static readonly ImmutableHashSet<PID> EmptyChildren = ImmutableHashSet<PID>.Empty;
-        private readonly Props _props;
-
-        private ActorContextExtras _extras;
-        private object _messageOrEnvelope;
-        private ContextState _state;
-
-        private ActorContextExtras EnsureExtras()
-        {
-            if (_extras == null)
-            {
-                var context = _props?.ContextDecoratorChain(this) ?? this;
-                _extras = new ActorContextExtras(context);
-            }
-
-            return _extras;
-        }
 
         public ActorContext(Props props, PID parent)
         {
@@ -94,8 +48,6 @@ namespace ActorPlayground
             IncarnateActor();
         }
 
-        public IImmutableSet<PID> Children => _extras?.Children ?? EmptyChildren;
-        IReadOnlyCollection<PID> IContext.Children => Children;
 
         public IActor Actor { get; private set; }
         public PID Parent { get; }
@@ -108,8 +60,6 @@ namespace ActorPlayground
         public MessageHeader Headers => MessageEnvelope.UnwrapHeader(_messageOrEnvelope);
 
         public TimeSpan ReceiveTimeout { get; private set; }
-
-        public void Stash() => EnsureExtras().Stash.Push(Message);
 
         public void Respond(object message) => Send(Sender, message);
 
@@ -133,15 +83,12 @@ namespace ActorPlayground
             }
 
             var pid = props.Spawn($"{Self.Id}/{name}", Self);
-            EnsureExtras().AddChild(pid);
+
+            AddChild(pid);
 
 
             return pid;
         }
-
-        public void Watch(PID pid) => pid.SendSystemMessage(new Watch(Self));
-
-        public void Unwatch(PID pid) => pid.SendSystemMessage(new Unwatch(Self));
 
         public void SetReceiveTimeout(TimeSpan duration)
         {
@@ -157,27 +104,27 @@ namespace ActorPlayground
 
             ReceiveTimeout = duration;
 
-            EnsureExtras();
-            _extras.StopReceiveTimeoutTimer();
-            if (_extras.ReceiveTimeoutTimer == null)
+            StopReceiveTimeoutTimer();
+
+            if (ReceiveTimeoutTimer == null)
             {
-                _extras.InitReceiveTimeoutTimer(new Timer(ReceiveTimeoutCallback, null, ReceiveTimeout,
+                InitReceiveTimeoutTimer(new Timer(ReceiveTimeoutCallback, null, ReceiveTimeout,
                     ReceiveTimeout));
             }
             else
             {
-                _extras.ResetReceiveTimeoutTimer(ReceiveTimeout);
+                ResetReceiveTimeoutTimer(ReceiveTimeout);
             }
         }
 
         public void CancelReceiveTimeout()
         {
-            if (_extras?.ReceiveTimeoutTimer == null)
+            if (ReceiveTimeoutTimer == null)
             {
                 return;
             }
-            _extras.StopReceiveTimeoutTimer();
-            _extras.KillreceiveTimeoutTimer();
+            StopReceiveTimeoutTimer();
+            KillReceiveTimeoutTimer();
 
             ReceiveTimeout = TimeSpan.Zero;
         }
@@ -267,12 +214,6 @@ namespace ActorPlayground
                         return InitiateStopAsync();
                     case Terminated t:
                         return HandleTerminatedAsync(t);
-                    case Watch w:
-                        HandleWatch(w);
-                        return Task.CompletedTask;
-                    case Unwatch uw:
-                        HandleUnwatch(uw);
-                        return Task.CompletedTask;
                     case Failure f:
                         HandleFailure(f);
                         return Task.CompletedTask;
@@ -289,7 +230,7 @@ namespace ActorPlayground
                         return Task.CompletedTask;
                 }
             }
-            catch (Exception x)
+            catch (Exception)
             {
                 throw;
             }
@@ -303,15 +244,6 @@ namespace ActorPlayground
             }
 
             var influenceTimeout = true;
-            if (ReceiveTimeout > TimeSpan.Zero)
-            {
-                var notInfluenceTimeout = msg is INotInfluenceReceiveTimeout;
-                influenceTimeout = !notInfluenceTimeout;
-                if (influenceTimeout)
-                {
-                    _extras.StopReceiveTimeoutTimer();
-                }
-            }
 
             var res = ProcessMessageAsync(msg);
 
@@ -320,10 +252,10 @@ namespace ActorPlayground
                 //special handle non completed tasks that need to reset ReceiveTimout
                 if (!res.IsCompleted)
                 {
-                    return res.ContinueWith(_ => _extras.ResetReceiveTimeoutTimer(ReceiveTimeout));
+                    return res.ContinueWith(_ => ResetReceiveTimeoutTimer(ReceiveTimeout));
                 }
 
-                _extras.ResetReceiveTimeoutTimer(ReceiveTimeout);
+                ResetReceiveTimeoutTimer(ReceiveTimeout);
             }
             return res;
         }
@@ -343,13 +275,6 @@ namespace ActorPlayground
                 return Task.CompletedTask;
             }
 
-
-            //are we using decorators, if so, ensure it has been created
-            if (_props.ContextDecoratorChain != null)
-            {
-                return Actor.ReceiveAsync(EnsureExtras().Context);
-            }
-
             return Actor.ReceiveAsync(this);
         }
 
@@ -358,12 +283,9 @@ namespace ActorPlayground
             //slow path, there is middleware, message must be wrapped in an envelop
             if (_props.ReceiverMiddlewareChain != null)
             {
-                return _props.ReceiverMiddlewareChain(EnsureExtras().Context, MessageEnvelope.Wrap(msg));
+                return _props.ReceiverMiddlewareChain(this, MessageEnvelope.Wrap(msg));
             }
-            if (_props.ContextDecoratorChain != null)
-            {
-                return EnsureExtras().Context.Receive(MessageEnvelope.Wrap(msg));
-            }
+
             //fast path, 0 alloc invocation of actor receive
             _messageOrEnvelope = msg;
             return DefaultReceive();
@@ -381,7 +303,7 @@ namespace ActorPlayground
             if (_props.SenderMiddlewareChain != null)
             {
                 //slow path
-                _props.SenderMiddlewareChain(EnsureExtras().Context, target, MessageEnvelope.Wrap(message));
+                _props.SenderMiddlewareChain(this, target, MessageEnvelope.Wrap(message));
             }
             else
             {
@@ -404,20 +326,6 @@ namespace ActorPlayground
             await StopAllChildren();
         }
 
-        private void HandleUnwatch(Unwatch uw) => _extras?.Unwatch(uw.Watcher);
-
-        private void HandleWatch(Watch w)
-        {
-            if (_state >= ContextState.Stopping)
-            {
-                w.Watcher.SendSystemMessage(Terminated.From(Self));
-            }
-            else
-            {
-                EnsureExtras().Watch(w.Watcher);
-            }
-        }
-
         private void HandleFailure(Failure msg)
         {
             switch (Actor)
@@ -433,7 +341,8 @@ namespace ActorPlayground
 
         private async Task HandleTerminatedAsync(Terminated msg)
         {
-            _extras?.RemoveChild(msg.Who);
+            RemoveChild(msg.Who);
+
             await InvokeUserMessageAsync(msg);
             if (_state == ContextState.Stopping || _state == ContextState.Restarting)
             {
@@ -464,14 +373,14 @@ namespace ActorPlayground
 
         private async Task StopAllChildren()
         {
-            _extras?.Children?.Stop();
+            Children?.Stop();
             await TryRestartOrStopAsync();
         }
 
         //intermediate stopping stage, waiting for children to stop
         private Task TryRestartOrStopAsync()
         {
-            if (_extras?.Children?.Count > 0)
+            if (Children?.Count > 0)
             {
                 return Task.CompletedTask;
             }
@@ -495,11 +404,6 @@ namespace ActorPlayground
             //This is intentional
             await InvokeUserMessageAsync(Stopped.Instance);
 
-            DisposeActorIfDisposable();
-
-            //Notify watchers
-            _extras?.Watchers.SendSystemNessage(Terminated.From(Self));
-
             //Notify parent
             Parent?.SendSystemMessage(Terminated.From(Self));
 
@@ -508,32 +412,17 @@ namespace ActorPlayground
 
         private async Task RestartAsync()
         {
-            DisposeActorIfDisposable();
             IncarnateActor();
+
             Self.SendSystemMessage(ResumeMailbox.Instance);
 
             await InvokeUserMessageAsync(Started.Instance);
-            if (_extras?.Stash != null)
-            {
-                while (_extras.Stash.Any())
-                {
-                    var msg = _extras.Stash.Pop();
-                    await InvokeUserMessageAsync(msg);
-                }
-            }
-        }
 
-        private void DisposeActorIfDisposable()
-        {
-            if (Actor is IDisposable disposableActor)
-            {
-                disposableActor.Dispose();
-            }
         }
 
         private void ReceiveTimeoutCallback(object state)
         {
-            if (_extras?.ReceiveTimeoutTimer == null)
+            if (ReceiveTimeoutTimer == null)
             {
                 return;
             }
@@ -551,7 +440,6 @@ namespace ActorPlayground
         {
             var future = new FutureProcess<object>();
 
-            pid.SendSystemMessage(new Watch(future.Pid));
             Stop(pid);
 
             return future.Task;
@@ -563,7 +451,6 @@ namespace ActorPlayground
         {
             var future = new FutureProcess<object>();
 
-            pid.SendSystemMessage(new Watch(future.Pid));
             Poison(pid);
 
             return future.Task;
