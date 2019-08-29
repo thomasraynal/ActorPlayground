@@ -13,21 +13,15 @@ namespace ActorPlayground.POC
         private ISupervisor _supervisor;
         private ActorProcess _process;
 
-        public ActorProcess Spawn(IActor actor)
+        public ActorProcess Spawn(Func<IActor> actorFactory)
         {
-            return _registry.Add(actor, _process);
-        }
-
-        public Cluster()
-        {
-    
+            return _registry.Add(actorFactory, _process);
         }
 
         public void Initialize(ISupervisor supervisor, IActorRegistry registry)
         {
             _registry = registry;
             _supervisor = supervisor;
-            _process = _registry.Add(this, null);
         }
 
         public void Emit(string target, object message)
@@ -54,7 +48,7 @@ namespace ActorPlayground.POC
         private Task<T> SendInternal<T>(string target, object message, Future<T> future)
         {
             var targetProcess = _registry.Get(target);
-            var futureProcess = _registry.Add(future, _process);
+            var futureProcess = _registry.Add(() => future, _process);
 
             targetProcess.Post(message, futureProcess);
 
@@ -68,18 +62,12 @@ namespace ActorPlayground.POC
 
         public void Stop(string id)
         {
-            var process = Get(id);
-
-            //shoudl go through Cluster
-            Emit(_supervisor.)
-
-            process.Post(new Stop(id), process);
+            Emit(_supervisor.Process.Id, new Stop(id));
         }
 
         public void Start(string id)
         {
-            var process = Get(id);
-            process.Post(new Start(id), process);
+            Emit(_supervisor.Process.Id, new Start(id));
         }
 
         public void Remove(string id)
@@ -88,12 +76,5 @@ namespace ActorPlayground.POC
 
             _registry.Remove(id);
         }
-
-        public Task Receive(IContext context)
-        {
-            throw new NotImplementedException();
-        }
-
-  
     }
 }

@@ -4,5 +4,6 @@ namespace ActorPlayground.POC
 {
     public interface ISupervisor : IActor
     {
+        ActorProcess Process { get; }
     }
 }

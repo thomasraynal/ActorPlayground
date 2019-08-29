@@ -73,18 +73,18 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldEmitEvent()
             {
-                var cluster = new Cluster();
-                var supervisor = new Supervisor(new OneForOneStrategy(cluster));
-                var registry = new ActorRegistry(supervisor);
+                var cluster = Factory.Create();
 
-                cluster.Initialize(registry);
-
-                var actor = new HelloActor();
-                var process = cluster.Spawn(actor);
+                IActor actorFactory() => new HelloActor();
+                var process = cluster.Spawn(actorFactory);
 
                 cluster.Emit(process.Id, new Hello(process.Id));
 
                 await Task.Delay(10);
+
+                var actor = process.Actor as HelloActor;
+
+                Assert.IsNotNull(actor);
 
                 Assert.AreEqual(1, actor.Received.Count);
 
@@ -93,13 +93,9 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldExecuteCommand()
             {
-                var cluster = new Cluster();
-                var supervisor = new Supervisor(new OneForOneStrategy(cluster));
-                var registry = new ActorRegistry(supervisor);
+                var cluster = Factory.Create();
 
-                cluster.Initialize(registry);
-
-                var actor = new HelloActor2();
+                IActor actor() => new HelloActor2();
                 var process = cluster.Spawn(actor);
           
                 var result = await cluster.Send<Hello>(process.Id, new Hello("ProtoActor"), TimeSpan.FromSeconds(1));
@@ -110,20 +106,28 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldApplySupervisionStrategy()
             {
-                var cluster = new Cluster();
-                var supervisor = new Supervisor(new OneForOneStrategy(cluster));
-                var registry = new ActorRegistry(supervisor);
+                var cluster = Factory.Create();
 
-                cluster.Initialize(registry);
+                IActor actorFactory() => new FaultyActor();
+                var process = cluster.Spawn(actorFactory);
 
-                var actor = new FaultyActor();
-                var process = cluster.Spawn(actor);
+                var actor = process.Actor as FaultyActor;
+
+                Assert.IsNotNull(actor);
+
+                var idBefore = actor.Id;
 
                 cluster.Emit(process.Id, new Hello(process.Id));
 
                 await Task.Delay(10);
 
-             //   Assert.AreEqual(1, actor.Received.Count);
+                actor = process.Actor as FaultyActor;
+
+                var idAfter = actor.Id;
+
+                Assert.IsNotNull(actor);
+
+                Assert.AreNotEqual(idBefore, idAfter);
 
             }
 

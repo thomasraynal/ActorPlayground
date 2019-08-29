@@ -32,7 +32,7 @@ namespace ActorPlayground.POC
                     break;
                 case Stop _:
 
-                    foreach(var child in process.Children)
+                    foreach (var child in process.Children)
                     {
                         _cluster.Stop(child.Id);
                     }

@@ -1,4 +1,5 @@
 ﻿using ActorPlayground.POC.Message;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -9,37 +10,38 @@ namespace ActorPlayground.POC
 
         private readonly CancellationTokenSource _cancel;
         private readonly IActorRegistry _registry;
-        private readonly ISupervisor _supervisor;
+
 
         //refacto shoud be string, handle all via cluster
         public List<ActorProcess> Children { get; }
         public ActorProcess Parent { get; private set; }
         public string Id { get; private set; }
+        public Func<IActor> ActorFactory { get; private set; }
         public IActor Actor { get; private set; }
         public CancellationToken Token { get; }
-        public Mailbox Mailbox { get; }
+        public Mailbox Mailbox { get; private set; }
 
-        public ActorProcess(ISupervisor supervisor, IActorRegistry registry)
+        public ActorProcess(IActorRegistry registry)
         {
             _cancel = new CancellationTokenSource();
             _registry = registry;
-            _supervisor = supervisor;
 
             Children = new List<ActorProcess>();
             Token = _cancel.Token;
-            Mailbox = new Mailbox(this, supervisor);
         }
 
-        public void Initialize(string id, IActor actor, ActorProcess parent)
+        public void Initialize(string id, Func<IActor> actorFactory, Mailbox mailbox, ActorProcess parent)
         {
             Id = id;
-            Actor = actor;
+            ActorFactory = actorFactory;
+            Actor = actorFactory();
             Parent = parent;
+            Mailbox = mailbox;
         }
 
-        public ActorProcess SpawnChild(IActor actor)
+        public ActorProcess SpawnChild(Func<IActor> actorFactory)
         {
-            var child = _registry.Add(actor, Parent);
+            var child = _registry.Add(actorFactory, Parent);
 
             Children.Add(child);
 
@@ -50,23 +52,6 @@ namespace ActorPlayground.POC
         public void Post(object msg, ActorProcess sender)
         {
             Mailbox.Post(msg, sender);
-        }
-
-        public void Start()
-        {
-            Post(new Start(), this);
-        }
-
-        public void Stop()
-        {
-            Post(new Stop(), this);
-
-            foreach (var child in Children)
-            {
-                child.Stop();
-            }
-
-            _cancel.Cancel();
         }
     }
 }
