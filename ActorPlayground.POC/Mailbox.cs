@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ActorPlayground.POC.Message;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,11 +39,13 @@ namespace ActorPlayground.POC
         private readonly BlockingCollection<MessageContext> _messages;
         private readonly ActorProcess _process;
         private readonly Task _workProc;
+        private readonly ISupervisor _supervisor;
 
-        public Mailbox(ActorProcess process)
+        public Mailbox(ActorProcess process, ISupervisor supervisor)
         {
             _messages = new BlockingCollection<MessageContext>();
             _process = process;
+            _supervisor = supervisor;
             _workProc = Task.Run(DoWork, process.Token);
         }
 
@@ -55,22 +58,21 @@ namespace ActorPlayground.POC
 
         private async Task DoWork()
         {
-            foreach(var msg in _messages.GetConsumingEnumerable(_process.Token))
+            foreach (var msg in _messages.GetConsumingEnumerable(_process.Token))
             {
                 try
                 {
                     await _process.Actor.Receive(msg);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
+                    var message = new Failure(msg.Actor.Id, ex);
+                    var failure = new MessageContext(msg.Actor, message, _process);
+
+                    await _supervisor.Receive(failure);
 
                 }
             }
-        }
-
-        public void Respond(object message)
-        {
-            throw new NotImplementedException();
         }
 
     }

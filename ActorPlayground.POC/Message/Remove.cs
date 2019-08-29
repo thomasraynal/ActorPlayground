@@ -4,9 +4,9 @@ using System.Text;
 
 namespace ActorPlayground.POC.Message
 {
-    public class Start: ISystemMessage
+    public class Remove : ISystemMessage
     {
-        public Start(string who)
+        public Remove(string who)
         {
             Who = who;
         }

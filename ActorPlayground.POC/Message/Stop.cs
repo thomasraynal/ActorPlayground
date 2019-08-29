@@ -4,7 +4,13 @@ using System.Text;
 
 namespace ActorPlayground.POC.Message
 {
-    class Stop
+    public class Stop : ISystemMessage
     {
+        public Stop(string who)
+        {
+            Who = who;
+        }
+
+        public string Who { get; }
     }
 }

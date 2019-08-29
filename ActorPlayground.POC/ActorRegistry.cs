@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ActorPlayground.POC.Message;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -7,12 +8,21 @@ namespace ActorPlayground.POC
     public class ActorRegistry : IActorRegistry
     {
         private int _sequenceId;
-        private Dictionary<string, ActorProcess> _actors = new Dictionary<string, ActorProcess>();
+        private ISupervisor _supervisor;
+        private readonly Dictionary<string, ActorProcess> _actors = new Dictionary<string, ActorProcess>();
 
-        public ActorProcess Add(IActor actor)
+        public ActorRegistry(ISupervisor supervisor)
+        {
+            _supervisor = supervisor;
+        }
+
+        public ActorProcess Add(IActor actor, ActorProcess parent)
         {
             var id = NextId();
-            var process = new ActorProcess(id, actor);
+            var process = new ActorProcess(_supervisor, this);
+
+            process.Initialize(id, actor, parent);
+
             _actors.Add(id, process);
 
             return process;
@@ -25,9 +35,11 @@ namespace ActorPlayground.POC
             return _actors[id];
         }
 
-        public void Remove(ActorProcess actor)
+        public void Remove(string id)
         {
-            _actors.Remove(actor.Id);
+            if (!_actors.ContainsKey(id)) throw new Exception("not exist");
+
+            _actors.Remove(id);
         }
 
         public string NextId()

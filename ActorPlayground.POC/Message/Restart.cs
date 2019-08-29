@@ -4,13 +4,16 @@ using System.Text;
 
 namespace ActorPlayground.POC.Message
 {
-    public class Start: ISystemMessage
+    public class Restart : ISystemMessage
     {
-        public Start(string who)
+
+        public Restart(string who, Exception reason)
         {
+            Reason = reason;
             Who = who;
         }
 
+        public Exception Reason { get; }
         public string Who { get; }
     }
 }

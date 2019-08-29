@@ -21,6 +21,8 @@ namespace ActorPlayground.POC
 
         public class FaultyActor : IActor
         {
+            public Guid Id = Guid.NewGuid();
+
             public Task Receive(IContext context)
             {
                 var msg = context.Message;
@@ -71,8 +73,12 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldEmitEvent()
             {
-                var registry = new ActorRegistry();
-                var cluster = new Cluster(registry);
+                var cluster = new Cluster();
+                var supervisor = new Supervisor(new OneForOneStrategy(cluster));
+                var registry = new ActorRegistry(supervisor);
+
+                cluster.Initialize(registry);
+
                 var actor = new HelloActor();
                 var process = cluster.Spawn(actor);
 
@@ -87,8 +93,12 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldExecuteCommand()
             {
-                var registry = new ActorRegistry();
-                var cluster = new Cluster(registry);
+                var cluster = new Cluster();
+                var supervisor = new Supervisor(new OneForOneStrategy(cluster));
+                var registry = new ActorRegistry(supervisor);
+
+                cluster.Initialize(registry);
+
                 var actor = new HelloActor2();
                 var process = cluster.Spawn(actor);
           
@@ -98,8 +108,22 @@ namespace ActorPlayground.POC
             }
 
             [Test]
-            public void ShouldEscalateException()
+            public async Task ShouldApplySupervisionStrategy()
             {
+                var cluster = new Cluster();
+                var supervisor = new Supervisor(new OneForOneStrategy(cluster));
+                var registry = new ActorRegistry(supervisor);
+
+                cluster.Initialize(registry);
+
+                var actor = new FaultyActor();
+                var process = cluster.Spawn(actor);
+
+                cluster.Emit(process.Id, new Hello(process.Id));
+
+                await Task.Delay(10);
+
+             //   Assert.AreEqual(1, actor.Received.Count);
 
             }
 

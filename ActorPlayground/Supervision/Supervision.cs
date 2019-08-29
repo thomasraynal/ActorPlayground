@@ -6,8 +6,7 @@ namespace ActorPlayground
 {
     public static class Supervision
     {
-        public static ISupervisorStrategy DefaultStrategy { get; } =
-            new OneForOneStrategy((who, reason) => SupervisorDirective.Restart);
+        public static ISupervisorStrategy DefaultStrategy { get; } = new OneForOneStrategy((who, reason) => SupervisorDirective.Restart);
     }
 
 }

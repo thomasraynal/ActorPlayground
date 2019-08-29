@@ -2,8 +2,8 @@
 {
     public interface IActorRegistry
     {
-        ActorProcess Add(IActor actor);
+        ActorProcess Add(IActor actor, ActorProcess parent);
         ActorProcess Get(string id);
-        void Remove(ActorProcess id);
+        void Remove(string id);
     }
 }
