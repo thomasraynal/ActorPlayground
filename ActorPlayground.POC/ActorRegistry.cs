@@ -2,41 +2,36 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
+
     public class ActorRegistry : IActorRegistry
     {
         private int _sequenceId;
-        private ICluster _cluster;
-        private readonly ISupervisor _supervisor;
-        private readonly Dictionary<string, ActorProcess> _actors = new Dictionary<string, ActorProcess>();
+        private readonly ISupervisorStrategy _supervisorStrategy;
+        private readonly Dictionary<string, IActorProcess> _actors = new Dictionary<string, IActorProcess>();
 
-        public ActorRegistry(ISupervisor supervisor)
+        public ActorRegistry(ISupervisorStrategy supervisorStrategy)
         {
-            _supervisor = supervisor;
+            _supervisorStrategy = supervisorStrategy;
         }
 
-        public void Initialize(ICluster cluster)
-        {
-            _cluster = cluster;
-        }
-
-        public ActorProcess Add(Func<IActor> actorFactory, ActorProcess parent)
+        public IActorProcess Add(Func<IActor> actorFactory, IActorProcess parent)
         {
             var id = NextId();
 
-            var process = new ActorProcess(this);
-            var mailbox = new Mailbox(process, _supervisor);
+            var process = new ActorProcess(id, actorFactory, parent, this, _supervisorStrategy);
 
-            process.Initialize(id, actorFactory, mailbox, parent);
+            process.Start();
 
             _actors.Add(id, process);
 
             return process;
         }
 
-        public ActorProcess Get(string id)
+        public IActorProcess Get(string id)
         {
             if (!_actors.ContainsKey(id)) throw new Exception("not exist");
 
@@ -48,6 +43,7 @@ namespace ActorPlayground.POC
             if (!_actors.ContainsKey(id)) throw new Exception("not exist");
 
             _actors.Remove(id);
+
         }
 
         public string NextId()

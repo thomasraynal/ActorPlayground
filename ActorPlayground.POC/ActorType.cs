@@ -4,8 +4,12 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface ISystemMessage : IMessage
+    public enum ActorType
     {
-        string Who { get; }
+        None,
+        Vanilla,
+        Future,
+        Supervisor,
+        Cluster
     }
 }

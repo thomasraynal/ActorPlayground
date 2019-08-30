@@ -8,14 +8,10 @@ namespace ActorPlayground.POC
     {
         public static ICluster Create()
         {
-            var cluster = new Cluster();
-            var supervisor = new Supervisor(new OneForOneStrategy(cluster));
-            var registry = new ActorRegistry(supervisor);
-
-            supervisor.Initialize(registry);
-            registry.Initialize(cluster);
-
-            cluster.Initialize(supervisor, registry);
+      
+            var supervisorStrategy = new OneForOneStrategy();
+            var registry = new ActorRegistry(supervisorStrategy);
+            var cluster = new Cluster(registry);
 
             return cluster;
         }

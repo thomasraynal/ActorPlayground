@@ -9,43 +9,58 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-
-    public class Mailbox
+    public class Mailbox : IMailbox
     {
-        private readonly BlockingCollection<MessageContext> _messages;
-        private readonly ActorProcess _process;
-        private readonly Task _workProc;
-        private readonly ISupervisor _supervisor;
+        private BlockingCollection<MessageContext> _messages;
+        private readonly IActorProcess _process;
+        private CancellationTokenSource _cancel;
+        private Task _workProc;
 
-        public Mailbox(ActorProcess process, ISupervisor supervisor)
+        public Mailbox(IActorProcess process)
         {
-            _messages = new BlockingCollection<MessageContext>();
             _process = process;
-            _supervisor = supervisor;
-            _workProc = Task.Run(DoWork, process.Token);
         }
 
-        public void Post(object msg, ActorProcess sender)
+        public void Post(IMessage msg, IActorProcess sender)
         {
             var context = new MessageContext(_process, msg, sender);
 
             _messages.Add(context);
         }
 
+        public void Start()
+        {
+            _messages = new BlockingCollection<MessageContext>();
+            _cancel = new CancellationTokenSource();
+            _workProc = Task.Run(DoWork, _cancel.Token);
+
+        }
+
+        public void Stop()
+        {
+            _cancel.Cancel();
+            while (!_messages.IsCompleted)  Thread.Sleep(10);
+        }
+
         private async Task DoWork()
         {
-            foreach (var msg in _messages.GetConsumingEnumerable(_process.Token))
+            foreach (var msg in _messages.GetConsumingEnumerable(_cancel.Token))
             {
                 try
                 {
+                    if (msg.Message.IsSystemMessage)
+                    {
+                        _process.HandleSystemMessage(msg.Message);
+                        continue;
+                    }
+
                     await _process.Actor.Receive(msg);
                 }
                 catch (Exception ex)
                 {
-                    var message = new Failure(msg.Actor.Id, ex);
-                    var failure = new MessageContext(msg.Actor, message, _process);
+                    var failure = new Failure(msg.Actor.Id, ex);
 
-                    await _supervisor.Receive(failure);
+                    await _process.HandleFailure(failure);
 
                 }
             }

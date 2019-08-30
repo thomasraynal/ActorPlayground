@@ -15,5 +15,7 @@ namespace ActorPlayground.POC.Message
 
         public Exception Reason { get; }
         public string Who { get; }
+
+        public bool IsSystemMessage => true;
     }
 }

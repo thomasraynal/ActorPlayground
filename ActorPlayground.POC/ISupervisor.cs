@@ -1,9 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using ActorPlayground.POC.Message;
+using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public interface ISupervisor : IActor
+    public interface ISupervisor
     {
-        ActorProcess Process { get; }
+        Task HandleFailure(Failure failure);
     }
 }

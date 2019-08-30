@@ -2,46 +2,43 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public class ActorProcess
+    public class ActorProcess : IActorProcess
     {
 
-        private readonly CancellationTokenSource _cancel;
         private readonly IActorRegistry _registry;
+        private readonly ISupervisorStrategy _supervisionStrategy;
+        private readonly IMailbox _mailbox;
+        private readonly Func<IActor> _actorFactory;
+        private readonly IActorProcess _parent;
 
-
-        //refacto shoud be string, handle all via cluster
-        public List<ActorProcess> Children { get; }
-        public ActorProcess Parent { get; private set; }
+        public List<IActorProcess> Children { get; }
         public string Id { get; private set; }
-        public Func<IActor> ActorFactory { get; private set; }
         public IActor Actor { get; private set; }
-        public CancellationToken Token { get; }
-        public Mailbox Mailbox { get; private set; }
 
-        public ActorProcess(IActorRegistry registry)
+        public ActorProcess(
+            string id,
+            Func<IActor> actorFactory,
+            IActorProcess parent,
+            IActorRegistry registry,
+            ISupervisorStrategy supervisionStrategy)
         {
-            _cancel = new CancellationTokenSource();
             _registry = registry;
+            _supervisionStrategy = supervisionStrategy;
+            _mailbox = new Mailbox(this);
+            _actorFactory = actorFactory;
+            _parent = parent;
 
-            Children = new List<ActorProcess>();
-            Token = _cancel.Token;
-        }
-
-        public void Initialize(string id, Func<IActor> actorFactory, Mailbox mailbox, ActorProcess parent)
-        {
+            Children = new List<IActorProcess>();
             Id = id;
-            ActorFactory = actorFactory;
-            Actor = actorFactory();
-            Parent = parent;
-            Mailbox = mailbox;
         }
 
-        public ActorProcess SpawnChild(Func<IActor> actorFactory)
+        public IActorProcess SpawnChild(Func<IActor> actorFactory)
         {
-            var child = _registry.Add(actorFactory, Parent);
+            var child = _registry.Add(actorFactory, _parent);
 
             Children.Add(child);
 
@@ -49,9 +46,65 @@ namespace ActorPlayground.POC
 
         }
 
-        public void Post(object msg, ActorProcess sender)
+        public void Post(IMessage msg, IActorProcess sender)
         {
-            Mailbox.Post(msg, sender);
+            _mailbox.Post(msg, sender);
+        }
+
+        public void Start()
+        {
+            Actor = _actorFactory();
+
+            _mailbox.Start();
+        }
+
+        public void Stop()
+        {
+            _mailbox.Stop();
+        }
+
+        public async Task HandleFailure(Failure failure)
+        {
+            await _supervisionStrategy.HandleFailure(this, failure);
+        }
+
+        public void HandleSystemMessage(IMessage message)
+        {
+            switch (message)
+            {
+                case Start _:
+
+                    Start();
+
+                    foreach (var child in Children)
+                    {
+                        child.Start();
+                    }
+
+                    break;
+
+                case Stop _:
+
+                    Stop();
+
+                    foreach (var child in Children)
+                    {
+                        child.Stop();
+                    }
+
+                    break;
+
+                case Restart _:
+
+                    Start();
+
+                    foreach (var child in Children)
+                    {
+                        child.Start();
+                    }
+
+                    break;
+            }
         }
     }
 }

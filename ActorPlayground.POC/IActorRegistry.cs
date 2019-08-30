@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
     public interface IActorRegistry
     {
-        ActorProcess Add(Func<IActor> actorFactory, ActorProcess parent);
-        ActorProcess Get(string id);
+        IActorProcess Add(Func<IActor> actorFactory, IActorProcess parent);
+        IActorProcess Get(string id);
         void Remove(string id);
     }
 }

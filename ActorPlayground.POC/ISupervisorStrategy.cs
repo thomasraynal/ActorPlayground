@@ -8,6 +8,6 @@ namespace ActorPlayground.POC
 {
     public interface ISupervisorStrategy
     {
-        Task Handle(ISystemMessage message);
+        Task HandleFailure(IActorProcess self, Failure failure);
     }
 }

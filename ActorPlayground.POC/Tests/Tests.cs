@@ -9,9 +9,11 @@ namespace ActorPlayground.POC
     [TestFixture]
     public class TestPoc
     {
-        public class Hello
+        public class Hello : IMessage
         {
             public string Who { get; }
+
+            public bool IsSystemMessage => false;
 
             public Hello(string who)
             {
@@ -98,7 +100,7 @@ namespace ActorPlayground.POC
                 IActor actor() => new HelloActor2();
                 var process = cluster.Spawn(actor);
           
-                var result = await cluster.Send<Hello>(process.Id, new Hello("ProtoActor"), TimeSpan.FromSeconds(1));
+                var result = await cluster.Send<Hello>(process.Id, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
 
                 Assert.AreEqual("ok", result.Who);
             }
@@ -132,8 +134,32 @@ namespace ActorPlayground.POC
             }
 
             [Test]
-            public void ShouldCreateChildActor()
+            public async Task ShouldSpawnChildActor()
             {
+                var cluster = Factory.Create();
+
+                IActor actorFactory() => new FaultyActor();
+                var parent = cluster.Spawn(actorFactory);
+
+                var child = parent.SpawnChild(actorFactory);
+                var childActor = child.Actor as FaultyActor;
+
+                Assert.IsNotNull(childActor);
+
+                var idBefore = childActor.Id;
+
+                cluster.Emit(parent.Id, new Hello(parent.Id));
+
+                await Task.Delay(10);
+
+                childActor = child.Actor as FaultyActor;
+
+                var idAfter = childActor.Id;
+
+                Assert.IsNotNull(childActor);
+
+                Assert.AreNotEqual(idBefore, idAfter);
+
 
             }
 
