@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public interface ICluster: IActor
+    public interface IRoot: IActor
     {
         void Emit(string target, IMessage message);
         Task<T> Send<T>(string target, IMessage message);

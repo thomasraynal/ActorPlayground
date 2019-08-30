@@ -22,7 +22,6 @@ message ConnectRequest{
 }
 
 message ConnectResponse{
-  bool ack =1;
 }
 
 message Unit {}

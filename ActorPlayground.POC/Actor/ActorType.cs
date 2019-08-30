@@ -9,6 +9,7 @@ namespace ActorPlayground.POC
         None,
         Vanilla,
         Future,
-        Cluster
+        Registry,
+        Root
     }
 }

@@ -6,12 +6,13 @@ namespace ActorPlayground.POC
 {
     public static class Factory
     {
-        public static ICluster Create(string adress)
+        public static IRoot Create(string adress)
         {
       
             var supervisorStrategy = new OneForOneStrategy();
-            var registry = new LocalActorRegistry(supervisorStrategy);
-            var cluster = new Cluster(registry, adress);
+            var serializer = new JsonNetSerializer();
+            var registry = new LocalActorRegistry(supervisorStrategy, serializer);
+            var cluster = new Root(registry, adress);
 
             return cluster;
         }

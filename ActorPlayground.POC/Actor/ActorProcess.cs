@@ -19,6 +19,8 @@ namespace ActorPlayground.POC
         public ActorId Id { get; private set; }
         public IActor Actor { get; private set; }
 
+        public ActorType Type { get; private set; }
+
         public ActorProcess(
             ActorId id,
             Func<IActor> actorFactory,
@@ -38,7 +40,7 @@ namespace ActorPlayground.POC
 
         public IActorProcess SpawnChild(Func<IActor> actorFactory)
         {
-            var child = _registry.AddTransient(actorFactory, _parent);
+            var child = _registry.AddTransient(actorFactory, ActorType.Vanilla, _parent);
 
             Children.Add(child);
 

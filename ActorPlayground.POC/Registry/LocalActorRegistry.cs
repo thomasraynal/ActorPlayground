@@ -13,19 +13,19 @@ namespace ActorPlayground.POC
         private readonly ISupervisorStrategy _supervisorStrategy;
         private readonly Dictionary<string, IActorProcess> _actors = new Dictionary<string, IActorProcess>();
 
-        public LocalActorRegistry(ISupervisorStrategy supervisorStrategy)
+        public LocalActorRegistry(ISupervisorStrategy supervisorStrategy, ISerializer serializer)
         {
             _supervisorStrategy = supervisorStrategy;
         }
 
-        public IActorProcess AddTransient(Func<IActor> actorFactory, IActorProcess parent)
+        public IActorProcess AddTransient(Func<IActor> actorFactory, ActorType type, IActorProcess parent)
         {
-            return Add(actorFactory, string.Empty, parent);
+            return Add(actorFactory, string.Empty, type, parent);
         }
 
-        public IActorProcess Add(Func<IActor> actorFactory, string adress, IActorProcess parent)
+        public IActorProcess Add(Func<IActor> actorFactory, string adress, ActorType type, IActorProcess parent)
         {
-            var id = NextId(adress);
+            var id = NextId(adress, type);
 
             var process = new ActorProcess(id, actorFactory, parent, this, _supervisorStrategy);
 
@@ -50,13 +50,12 @@ namespace ActorPlayground.POC
             _actors.Remove(id);
 
         }
-
-        public ActorId NextId(string adress)
+        private ActorId NextId(string adress, ActorType type)
         {
             var counter = Interlocked.Increment(ref _sequenceId);
             var id = "$" + counter;
 
-            return new ActorId(id, adress);
+            return new ActorId(id, adress, type);
         }
 
     }

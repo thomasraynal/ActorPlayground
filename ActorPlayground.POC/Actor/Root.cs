@@ -1,31 +1,29 @@
 ﻿using ActorPlayground.POC.Message;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public class Cluster : ICluster
+    public class Root : IRoot
     {
         private readonly IActorRegistry _registry;
         private readonly IActorProcess _process;
-
-        public Cluster(IActorRegistry registry, string adress)
+        
+        public Root(IActorRegistry registry, string adress)
         {
             _registry = registry;
-            _registry.Add(() => this, adress, null);
+            _registry.Add(() => this, adress, ActorType.Root, null);
         }
 
         public IActorProcess Spawn(Func<IActor> actorFactory, string adress)
         {
-            return  _registry.Add(actorFactory, adress, _process);
+            return  _registry.Add(actorFactory, adress, ActorType.Vanilla, _process);
         }
 
         public IActorProcess SpawnLocal(Func<IActor> actorFactory)
         {
-            return _registry.AddTransient(actorFactory, _process);
+            return _registry.AddTransient(actorFactory, ActorType.Vanilla, _process);
         }
 
         public void Emit(string target, IMessage message)
@@ -52,7 +50,7 @@ namespace ActorPlayground.POC
         private Task<T> SendInternal<T>(string target, IMessage message, Future<T> future)
         {
             var targetProcess = _registry.Get(target);
-            var futureProcess = _registry.AddTransient(() => future, _process);
+            var futureProcess = _registry.AddTransient(() => future, ActorType.Future, _process);
 
             targetProcess.Post(message, futureProcess);
 
