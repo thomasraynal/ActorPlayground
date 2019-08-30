@@ -75,12 +75,12 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldEmitEvent()
             {
-                var cluster = Factory.Create();
+                var cluster = Factory.Create("http://localhost:9090");
 
                 IActor actorFactory() => new HelloActor();
-                var process = cluster.Spawn(actorFactory);
+                var process = cluster.Spawn(actorFactory, "http://localhost:8080");
 
-                cluster.Emit(process.Id, new Hello(process.Id));
+                cluster.Emit(process.Id.Value, new Hello(process.Id.Value));
 
                 await Task.Delay(10);
 
@@ -95,12 +95,12 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldExecuteCommand()
             {
-                var cluster = Factory.Create();
+                var cluster = Factory.Create("http://localhost:9090");
 
                 IActor actor() => new HelloActor2();
-                var process = cluster.Spawn(actor);
+                var process = cluster.Spawn(actor, "http://localhost:8080");
           
-                var result = await cluster.Send<Hello>(process.Id, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
+                var result = await cluster.Send<Hello>(process.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
 
                 Assert.AreEqual("ok", result.Who);
             }
@@ -108,10 +108,10 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldApplySupervisionStrategy()
             {
-                var cluster = Factory.Create();
+                var cluster = Factory.Create("http://localhost:9090");
 
                 IActor actorFactory() => new FaultyActor();
-                var process = cluster.Spawn(actorFactory);
+                var process = cluster.Spawn(actorFactory, "http://localhost:8080");
 
                 var actor = process.Actor as FaultyActor;
 
@@ -119,7 +119,7 @@ namespace ActorPlayground.POC
 
                 var idBefore = actor.Id;
 
-                cluster.Emit(process.Id, new Hello(process.Id));
+                cluster.Emit(process.Id.Value, new Hello(process.Id.Value));
 
                 await Task.Delay(10);
 
@@ -136,10 +136,10 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldSpawnChildActor()
             {
-                var cluster = Factory.Create();
+                var cluster = Factory.Create("http://localhost:9090");
 
                 IActor actorFactory() => new FaultyActor();
-                var parent = cluster.Spawn(actorFactory);
+                var parent = cluster.Spawn(actorFactory, "http://localhost:8080");
 
                 var child = parent.SpawnChild(actorFactory);
                 var childActor = child.Actor as FaultyActor;
@@ -148,9 +148,9 @@ namespace ActorPlayground.POC
 
                 var idBefore = childActor.Id;
 
-                cluster.Emit(parent.Id, new Hello(parent.Id));
+                cluster.Emit(parent.Id.Value, new Hello(parent.Id.Value));
 
-                await Task.Delay(10);
+                await Task.Delay(1000);
 
                 childActor = child.Actor as FaultyActor;
 

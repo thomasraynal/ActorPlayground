@@ -9,7 +9,6 @@ namespace ActorPlayground.POC
         None,
         Vanilla,
         Future,
-        Supervisor,
         Cluster
     }
 }

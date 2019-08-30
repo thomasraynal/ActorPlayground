@@ -16,11 +16,11 @@ namespace ActorPlayground.POC
         private readonly IActorProcess _parent;
 
         public List<IActorProcess> Children { get; }
-        public string Id { get; private set; }
+        public ActorId Id { get; private set; }
         public IActor Actor { get; private set; }
 
         public ActorProcess(
-            string id,
+            ActorId id,
             Func<IActor> actorFactory,
             IActorProcess parent,
             IActorRegistry registry,
@@ -28,7 +28,7 @@ namespace ActorPlayground.POC
         {
             _registry = registry;
             _supervisionStrategy = supervisionStrategy;
-            _mailbox = new Mailbox(this);
+            _mailbox = new BlockingCollectionMailbox(this);
             _actorFactory = actorFactory;
             _parent = parent;
 
@@ -38,14 +38,13 @@ namespace ActorPlayground.POC
 
         public IActorProcess SpawnChild(Func<IActor> actorFactory)
         {
-            var child = _registry.Add(actorFactory, _parent);
+            var child = _registry.AddTransient(actorFactory, _parent);
 
             Children.Add(child);
 
             return child;
 
         }
-
         public void Post(IMessage msg, IActorProcess sender)
         {
             _mailbox.Post(msg, sender);

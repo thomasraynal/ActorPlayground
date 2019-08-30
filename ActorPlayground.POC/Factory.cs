@@ -6,12 +6,12 @@ namespace ActorPlayground.POC
 {
     public static class Factory
     {
-        public static ICluster Create()
+        public static ICluster Create(string adress)
         {
       
             var supervisorStrategy = new OneForOneStrategy();
-            var registry = new ActorRegistry(supervisorStrategy);
-            var cluster = new Cluster(registry);
+            var registry = new LocalActorRegistry(supervisorStrategy);
+            var cluster = new Cluster(registry, adress);
 
             return cluster;
         }

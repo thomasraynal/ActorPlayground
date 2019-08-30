@@ -7,26 +7,31 @@ using System.Threading.Tasks;
 namespace ActorPlayground.POC
 {
 
-    public class ActorRegistry : IActorRegistry
+    public class LocalActorRegistry : IActorRegistry
     {
         private int _sequenceId;
         private readonly ISupervisorStrategy _supervisorStrategy;
         private readonly Dictionary<string, IActorProcess> _actors = new Dictionary<string, IActorProcess>();
 
-        public ActorRegistry(ISupervisorStrategy supervisorStrategy)
+        public LocalActorRegistry(ISupervisorStrategy supervisorStrategy)
         {
             _supervisorStrategy = supervisorStrategy;
         }
 
-        public IActorProcess Add(Func<IActor> actorFactory, IActorProcess parent)
+        public IActorProcess AddTransient(Func<IActor> actorFactory, IActorProcess parent)
         {
-            var id = NextId();
+            return Add(actorFactory, string.Empty, parent);
+        }
+
+        public IActorProcess Add(Func<IActor> actorFactory, string adress, IActorProcess parent)
+        {
+            var id = NextId(adress);
 
             var process = new ActorProcess(id, actorFactory, parent, this, _supervisorStrategy);
 
             process.Start();
 
-            _actors.Add(id, process);
+            _actors.Add(id.Value, process);
 
             return process;
         }
@@ -46,10 +51,12 @@ namespace ActorPlayground.POC
 
         }
 
-        public string NextId()
+        public ActorId NextId(string adress)
         {
             var counter = Interlocked.Increment(ref _sequenceId);
-            return "$" + counter;
+            var id = "$" + counter;
+
+            return new ActorId(id, adress);
         }
 
     }

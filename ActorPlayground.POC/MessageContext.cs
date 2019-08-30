@@ -14,7 +14,7 @@ namespace ActorPlayground.POC
             Message = message;
             Sender = sender;
         }
-        public IEnumerable<string> Children => Actor.Children.Select(actor => actor.Id);
+        public IEnumerable<string> Children => Actor.Children.Select(actor => actor.Id.Value);
 
         public IActorProcess Actor { get; }
 

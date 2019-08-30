@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public class Mailbox : IMailbox
+    public class BlockingCollectionMailbox : IMailbox
     {
         private BlockingCollection<MessageContext> _messages;
         private readonly IActorProcess _process;
         private CancellationTokenSource _cancel;
         private Task _workProc;
 
-        public Mailbox(IActorProcess process)
+        public BlockingCollectionMailbox(IActorProcess process)
         {
             _process = process;
         }
@@ -58,7 +58,7 @@ namespace ActorPlayground.POC
                 }
                 catch (Exception ex)
                 {
-                    var failure = new Failure(msg.Actor.Id, ex);
+                    var failure = new Failure(msg.Actor.Id.Value, ex);
 
                     await _process.HandleFailure(failure);
 

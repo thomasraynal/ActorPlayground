@@ -12,15 +12,20 @@ namespace ActorPlayground.POC
         private readonly IActorRegistry _registry;
         private readonly IActorProcess _process;
 
-        public Cluster(IActorRegistry registry)
+        public Cluster(IActorRegistry registry, string adress)
         {
             _registry = registry;
-            _registry.Add(() => this, null);
+            _registry.Add(() => this, adress, null);
         }
 
-        public IActorProcess Spawn(Func<IActor> actorFactory)
+        public IActorProcess Spawn(Func<IActor> actorFactory, string adress)
         {
-            return  _registry.Add(actorFactory, _process);
+            return  _registry.Add(actorFactory, adress, _process);
+        }
+
+        public IActorProcess SpawnLocal(Func<IActor> actorFactory)
+        {
+            return _registry.AddTransient(actorFactory, _process);
         }
 
         public void Emit(string target, IMessage message)
@@ -47,7 +52,7 @@ namespace ActorPlayground.POC
         private Task<T> SendInternal<T>(string target, IMessage message, Future<T> future)
         {
             var targetProcess = _registry.Get(target);
-            var futureProcess = _registry.Add(() => future, _process);
+            var futureProcess = _registry.AddTransient(() => future, _process);
 
             targetProcess.Post(message, futureProcess);
 
@@ -80,5 +85,6 @@ namespace ActorPlayground.POC
         {
             return Task.CompletedTask;
         }
+
     }
 }
