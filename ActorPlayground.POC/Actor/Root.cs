@@ -10,18 +10,18 @@ namespace ActorPlayground.POC
         private readonly IActorRegistry _registry;
         private readonly IActorProcess _process;
         
-        public Root(IActorRegistry registry, string adress)
+        public Root(IActorRegistry registry, IRootConfiguration configuration)
         {
             _registry = registry;
-            _registry.Add(() => this, adress, ActorType.Root, null);
+            _registry.Add(() => this, configuration.Adress, ActorType.Root, null);
         }
 
         public IActorProcess Spawn(Func<IActor> actorFactory, string adress)
         {
-            return  _registry.Add(actorFactory, adress, ActorType.Vanilla, _process);
+            return _registry.Add(actorFactory, adress, ActorType.Vanilla, _process);
         }
 
-        public IActorProcess SpawnLocal(Func<IActor> actorFactory)
+        public IActorProcess SpawnTransient(Func<IActor> actorFactory)
         {
             return _registry.AddTransient(actorFactory, ActorType.Vanilla, _process);
         }
@@ -55,28 +55,6 @@ namespace ActorPlayground.POC
             targetProcess.Post(message, futureProcess);
 
             return future.UnderlyingTask;
-        }
-
-        public IActorProcess Get(string id)
-        {
-            return _registry.Get(id);
-        }
-
-        public void Stop(string id)
-        {
-            Emit(id, new Stop(id));
-        }
-
-        public void Start(string id)
-        {
-            Emit(id, new Start(id));
-        }
-
-        public void Remove(string id)
-        {
-            Stop(id);
-
-            _registry.Remove(id);
         }
 
         public Task Receive(IContext context)

@@ -14,7 +14,8 @@ message MessageBatch {
 message MessageEnvelope {
   string message_type = 1;
   bytes message_data = 2;
-  PID sender = 3;
+  bool has_response = 3;
+  PID sender = 4;
 }
 
 message ConnectRequest{
@@ -27,7 +28,7 @@ message ConnectResponse{
 message Unit {}
 
 service Remoting {
-  rpc Receive (stream MessageBatch) returns (stream Unit) {}
+  rpc Receive (stream MessageBatch) returns (stream MessageBatch) {}
   rpc Connect (ConnectRequest) returns (ConnectResponse) {}
   rpc Send (MessageEnvelope) returns (MessageEnvelope) {}
 }

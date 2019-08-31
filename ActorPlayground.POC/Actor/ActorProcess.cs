@@ -12,35 +12,30 @@ namespace ActorPlayground.POC
         private readonly IActorRegistry _registry;
         private readonly ISupervisorStrategy _supervisionStrategy;
         private readonly IMailbox _mailbox;
-        private readonly Func<IActor> _actorFactory;
-        private readonly IActorProcess _parent;
 
         public List<IActorProcess> Children { get; }
-        public ActorId Id { get; private set; }
-        public IActor Actor { get; private set; }
 
-        public ActorType Type { get; private set; }
+        public IActor Actor { get; private set; }
+        public IActorProcessConfiguration Configuration { get; private set; }
 
         public ActorProcess(
-            ActorId id,
-            Func<IActor> actorFactory,
-            IActorProcess parent,
+            IActorProcessConfiguration configuration,
             IActorRegistry registry,
-            ISupervisorStrategy supervisionStrategy)
+            ISupervisorStrategy supervisionStrategy,
+            ISerializer _)
         {
             _registry = registry;
             _supervisionStrategy = supervisionStrategy;
             _mailbox = new BlockingCollectionMailbox(this);
-            _actorFactory = actorFactory;
-            _parent = parent;
 
+            Configuration = configuration;
             Children = new List<IActorProcess>();
-            Id = id;
+     
         }
 
         public IActorProcess SpawnChild(Func<IActor> actorFactory)
         {
-            var child = _registry.AddTransient(actorFactory, ActorType.Vanilla, _parent);
+            var child = _registry.AddTransient(actorFactory, ActorType.Vanilla, Configuration.Parent);
 
             Children.Add(child);
 
@@ -54,7 +49,7 @@ namespace ActorPlayground.POC
 
         public void Start()
         {
-            Actor = _actorFactory();
+            Actor = Configuration.ActorFactory();
 
             _mailbox.Start();
         }

@@ -26,23 +26,23 @@ namespace ActorPlayground.Remote {
           string.Concat(
             "ChVBY3RvclBsYXlncm91bmQucHJvdG8iIgoDUElEEg8KB0FkZHJlc3MYASAB",
             "KAkSCgoCSWQYAiABKAkiMwoMTWVzc2FnZUJhdGNoEiMKCWVudmVsb3BlcxgB",
-            "IAMoCzIQLk1lc3NhZ2VFbnZlbG9wZSJTCg9NZXNzYWdlRW52ZWxvcGUSFAoM",
-            "bWVzc2FnZV90eXBlGAEgASgJEhQKDG1lc3NhZ2VfZGF0YRgCIAEoDBIUCgZz",
-            "ZW5kZXIYAyABKAsyBC5QSUQiJgoOQ29ubmVjdFJlcXVlc3QSFAoGc2VuZGVy",
-            "GAEgASgLMgQuUElEIh4KD0Nvbm5lY3RSZXNwb25zZRILCgNhY2sYASABKAgi",
-            "BgoEVW5pdDKPAQoIUmVtb3RpbmcSJQoHUmVjZWl2ZRINLk1lc3NhZ2VCYXRj",
-            "aBoFLlVuaXQiACgBMAESLgoHQ29ubmVjdBIPLkNvbm5lY3RSZXF1ZXN0GhAu",
-            "Q29ubmVjdFJlc3BvbnNlIgASLAoEU2VuZBIQLk1lc3NhZ2VFbnZlbG9wZRoQ",
-            "Lk1lc3NhZ2VFbnZlbG9wZSIAQhmqAhZBY3RvclBsYXlncm91bmQuUmVtb3Rl",
-            "YgZwcm90bzM="));
+            "IAMoCzIQLk1lc3NhZ2VFbnZlbG9wZSJpCg9NZXNzYWdlRW52ZWxvcGUSFAoM",
+            "bWVzc2FnZV90eXBlGAEgASgJEhQKDG1lc3NhZ2VfZGF0YRgCIAEoDBIUCgxo",
+            "YXNfcmVzcG9uc2UYAyABKAgSFAoGc2VuZGVyGAQgASgLMgQuUElEIiYKDkNv",
+            "bm5lY3RSZXF1ZXN0EhQKBnNlbmRlchgBIAEoCzIELlBJRCIRCg9Db25uZWN0",
+            "UmVzcG9uc2UiBgoEVW5pdDKXAQoIUmVtb3RpbmcSLQoHUmVjZWl2ZRINLk1l",
+            "c3NhZ2VCYXRjaBoNLk1lc3NhZ2VCYXRjaCIAKAEwARIuCgdDb25uZWN0Eg8u",
+            "Q29ubmVjdFJlcXVlc3QaEC5Db25uZWN0UmVzcG9uc2UiABIsCgRTZW5kEhAu",
+            "TWVzc2FnZUVudmVsb3BlGhAuTWVzc2FnZUVudmVsb3BlIgBCGaoCFkFjdG9y",
+            "UGxheWdyb3VuZC5SZW1vdGViBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.PID), global::ActorPlayground.Remote.PID.Parser, new[]{ "Address", "Id" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageBatch), global::ActorPlayground.Remote.MessageBatch.Parser, new[]{ "Envelopes" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageEnvelope), global::ActorPlayground.Remote.MessageEnvelope.Parser, new[]{ "MessageType", "MessageData", "Sender" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageEnvelope), global::ActorPlayground.Remote.MessageEnvelope.Parser, new[]{ "MessageType", "MessageData", "HasResponse", "Sender" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.ConnectRequest), global::ActorPlayground.Remote.ConnectRequest.Parser, new[]{ "Sender" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.ConnectResponse), global::ActorPlayground.Remote.ConnectResponse.Parser, new[]{ "Ack" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.ConnectResponse), global::ActorPlayground.Remote.ConnectResponse.Parser, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.Unit), global::ActorPlayground.Remote.Unit.Parser, null, null, null, null)
           }));
     }
@@ -355,6 +355,7 @@ namespace ActorPlayground.Remote {
     public MessageEnvelope(MessageEnvelope other) : this() {
       messageType_ = other.messageType_;
       messageData_ = other.messageData_;
+      hasResponse_ = other.hasResponse_;
       sender_ = other.sender_ != null ? other.sender_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -386,8 +387,19 @@ namespace ActorPlayground.Remote {
       }
     }
 
+    /// <summary>Field number for the "has_response" field.</summary>
+    public const int HasResponseFieldNumber = 3;
+    private bool hasResponse_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public bool HasResponse {
+      get { return hasResponse_; }
+      set {
+        hasResponse_ = value;
+      }
+    }
+
     /// <summary>Field number for the "sender" field.</summary>
-    public const int SenderFieldNumber = 3;
+    public const int SenderFieldNumber = 4;
     private global::ActorPlayground.Remote.PID sender_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public global::ActorPlayground.Remote.PID Sender {
@@ -412,6 +424,7 @@ namespace ActorPlayground.Remote {
       }
       if (MessageType != other.MessageType) return false;
       if (MessageData != other.MessageData) return false;
+      if (HasResponse != other.HasResponse) return false;
       if (!object.Equals(Sender, other.Sender)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -421,6 +434,7 @@ namespace ActorPlayground.Remote {
       int hash = 1;
       if (MessageType.Length != 0) hash ^= MessageType.GetHashCode();
       if (MessageData.Length != 0) hash ^= MessageData.GetHashCode();
+      if (HasResponse != false) hash ^= HasResponse.GetHashCode();
       if (sender_ != null) hash ^= Sender.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -443,8 +457,12 @@ namespace ActorPlayground.Remote {
         output.WriteRawTag(18);
         output.WriteBytes(MessageData);
       }
+      if (HasResponse != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(HasResponse);
+      }
       if (sender_ != null) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(34);
         output.WriteMessage(Sender);
       }
       if (_unknownFields != null) {
@@ -460,6 +478,9 @@ namespace ActorPlayground.Remote {
       }
       if (MessageData.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(MessageData);
+      }
+      if (HasResponse != false) {
+        size += 1 + 1;
       }
       if (sender_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(Sender);
@@ -480,6 +501,9 @@ namespace ActorPlayground.Remote {
       }
       if (other.MessageData.Length != 0) {
         MessageData = other.MessageData;
+      }
+      if (other.HasResponse != false) {
+        HasResponse = other.HasResponse;
       }
       if (other.sender_ != null) {
         if (sender_ == null) {
@@ -506,7 +530,11 @@ namespace ActorPlayground.Remote {
             MessageData = input.ReadBytes();
             break;
           }
-          case 26: {
+          case 24: {
+            HasResponse = input.ReadBool();
+            break;
+          }
+          case 34: {
             if (sender_ == null) {
               Sender = new global::ActorPlayground.Remote.PID();
             }
@@ -679,24 +707,12 @@ namespace ActorPlayground.Remote {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public ConnectResponse(ConnectResponse other) : this() {
-      ack_ = other.ack_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public ConnectResponse Clone() {
       return new ConnectResponse(this);
-    }
-
-    /// <summary>Field number for the "ack" field.</summary>
-    public const int AckFieldNumber = 1;
-    private bool ack_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool Ack {
-      get { return ack_; }
-      set {
-        ack_ = value;
-      }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -712,14 +728,12 @@ namespace ActorPlayground.Remote {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (Ack != other.Ack) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public override int GetHashCode() {
       int hash = 1;
-      if (Ack != false) hash ^= Ack.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -733,10 +747,6 @@ namespace ActorPlayground.Remote {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(pb::CodedOutputStream output) {
-      if (Ack != false) {
-        output.WriteRawTag(8);
-        output.WriteBool(Ack);
-      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -745,9 +755,6 @@ namespace ActorPlayground.Remote {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
-      if (Ack != false) {
-        size += 1 + 1;
-      }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -758,9 +765,6 @@ namespace ActorPlayground.Remote {
     public void MergeFrom(ConnectResponse other) {
       if (other == null) {
         return;
-      }
-      if (other.Ack != false) {
-        Ack = other.Ack;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -773,10 +777,6 @@ namespace ActorPlayground.Remote {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 8: {
-            Ack = input.ReadBool();
-            break;
-          }
         }
       }
     }

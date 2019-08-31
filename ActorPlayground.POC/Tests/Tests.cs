@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using StructureMap;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -6,6 +7,18 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
+    public class TestRegistry : Registry
+    {
+        public TestRegistry()
+        {
+            For<IActorRegistry>().Use<LocalActorRegistry>().Singleton();
+            For<ISerializer>().Use<JsonNetSerializer>();
+            For<ISupervisorStrategy>().Use<OneForOneStrategy>();
+            For<IRoot>().Use<Root>();
+            For<IActorProcess>().Use<ActorProcess>();
+        }
+    }
+
     [TestFixture]
     public class TestPoc
     {
@@ -75,12 +88,15 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldEmitEvent()
             {
-                var cluster = Factory.Create("http://localhost:9090");
+
+                var configuration = new RootConfiguration("http://localhost:9090");
+
+                var cluster = Factory.Create<TestRegistry>(configuration);
 
                 IActor actorFactory() => new HelloActor();
                 var process = cluster.Spawn(actorFactory, "http://localhost:8080");
 
-                cluster.Emit(process.Id.Value, new Hello(process.Id.Value));
+                cluster.Emit(process.Configuration.Id.Value, new Hello(process.Configuration.Id.Value));
 
                 await Task.Delay(10);
 
@@ -95,12 +111,14 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldExecuteCommand()
             {
-                var cluster = Factory.Create("http://localhost:9090");
+                var configuration = new RootConfiguration("http://localhost:9090");
+
+                var cluster = Factory.Create<TestRegistry>(configuration);
 
                 IActor actor() => new HelloActor2();
                 var process = cluster.Spawn(actor, "http://localhost:8080");
           
-                var result = await cluster.Send<Hello>(process.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
+                var result = await cluster.Send<Hello>(process.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
 
                 Assert.AreEqual("ok", result.Who);
             }
@@ -108,7 +126,9 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldApplySupervisionStrategy()
             {
-                var cluster = Factory.Create("http://localhost:9090");
+                var configuration = new RootConfiguration("http://localhost:9090");
+
+                var cluster = Factory.Create<TestRegistry>(configuration);
 
                 IActor actorFactory() => new FaultyActor();
                 var process = cluster.Spawn(actorFactory, "http://localhost:8080");
@@ -119,7 +139,7 @@ namespace ActorPlayground.POC
 
                 var idBefore = actor.Id;
 
-                cluster.Emit(process.Id.Value, new Hello(process.Id.Value));
+                cluster.Emit(process.Configuration.Id.Value, new Hello(process.Configuration.Id.Value));
 
                 await Task.Delay(10);
 
@@ -136,7 +156,9 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldSpawnChildActor()
             {
-                var cluster = Factory.Create("http://localhost:9090");
+                var configuration = new RootConfiguration("http://localhost:9090");
+
+                var cluster = Factory.Create<TestRegistry>(configuration);
 
                 IActor actorFactory() => new FaultyActor();
                 var parent = cluster.Spawn(actorFactory, "http://localhost:8080");
@@ -148,7 +170,7 @@ namespace ActorPlayground.POC
 
                 var idBefore = childActor.Id;
 
-                cluster.Emit(parent.Id.Value, new Hello(parent.Id.Value));
+                cluster.Emit(parent.Configuration.Id.Value, new Hello(parent.Configuration.Id.Value));
 
                 await Task.Delay(1000);
 

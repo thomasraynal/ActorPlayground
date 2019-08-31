@@ -13,17 +13,16 @@ namespace ActorPlayground.Remote {
     static readonly string __ServiceName = "Remoting";
 
     static readonly grpc::Marshaller<global::ActorPlayground.Remote.MessageBatch> __Marshaller_MessageBatch = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ActorPlayground.Remote.MessageBatch.Parser.ParseFrom);
-    static readonly grpc::Marshaller<global::ActorPlayground.Remote.Unit> __Marshaller_Unit = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ActorPlayground.Remote.Unit.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::ActorPlayground.Remote.ConnectRequest> __Marshaller_ConnectRequest = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ActorPlayground.Remote.ConnectRequest.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::ActorPlayground.Remote.ConnectResponse> __Marshaller_ConnectResponse = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ActorPlayground.Remote.ConnectResponse.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::ActorPlayground.Remote.MessageEnvelope> __Marshaller_MessageEnvelope = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ActorPlayground.Remote.MessageEnvelope.Parser.ParseFrom);
 
-    static readonly grpc::Method<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.Unit> __Method_Receive = new grpc::Method<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.Unit>(
+    static readonly grpc::Method<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.MessageBatch> __Method_Receive = new grpc::Method<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.MessageBatch>(
         grpc::MethodType.DuplexStreaming,
         __ServiceName,
         "Receive",
         __Marshaller_MessageBatch,
-        __Marshaller_Unit);
+        __Marshaller_MessageBatch);
 
     static readonly grpc::Method<global::ActorPlayground.Remote.ConnectRequest, global::ActorPlayground.Remote.ConnectResponse> __Method_Connect = new grpc::Method<global::ActorPlayground.Remote.ConnectRequest, global::ActorPlayground.Remote.ConnectResponse>(
         grpc::MethodType.Unary,
@@ -49,7 +48,7 @@ namespace ActorPlayground.Remote {
     [grpc::BindServiceMethod(typeof(Remoting), "BindService")]
     public abstract partial class RemotingBase
     {
-      public virtual global::System.Threading.Tasks.Task Receive(grpc::IAsyncStreamReader<global::ActorPlayground.Remote.MessageBatch> requestStream, grpc::IServerStreamWriter<global::ActorPlayground.Remote.Unit> responseStream, grpc::ServerCallContext context)
+      public virtual global::System.Threading.Tasks.Task Receive(grpc::IAsyncStreamReader<global::ActorPlayground.Remote.MessageBatch> requestStream, grpc::IServerStreamWriter<global::ActorPlayground.Remote.MessageBatch> responseStream, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -89,11 +88,11 @@ namespace ActorPlayground.Remote {
       {
       }
 
-      public virtual grpc::AsyncDuplexStreamingCall<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.Unit> Receive(grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncDuplexStreamingCall<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.MessageBatch> Receive(grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
         return Receive(new grpc::CallOptions(headers, deadline, cancellationToken));
       }
-      public virtual grpc::AsyncDuplexStreamingCall<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.Unit> Receive(grpc::CallOptions options)
+      public virtual grpc::AsyncDuplexStreamingCall<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.MessageBatch> Receive(grpc::CallOptions options)
       {
         return CallInvoker.AsyncDuplexStreamingCall(__Method_Receive, null, options);
       }
@@ -152,7 +151,7 @@ namespace ActorPlayground.Remote {
     /// <param name="serviceImpl">An object implementing the server-side handling logic.</param>
     public static void BindService(grpc::ServiceBinderBase serviceBinder, RemotingBase serviceImpl)
     {
-      serviceBinder.AddMethod(__Method_Receive, serviceImpl == null ? null : new grpc::DuplexStreamingServerMethod<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.Unit>(serviceImpl.Receive));
+      serviceBinder.AddMethod(__Method_Receive, serviceImpl == null ? null : new grpc::DuplexStreamingServerMethod<global::ActorPlayground.Remote.MessageBatch, global::ActorPlayground.Remote.MessageBatch>(serviceImpl.Receive));
       serviceBinder.AddMethod(__Method_Connect, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::ActorPlayground.Remote.ConnectRequest, global::ActorPlayground.Remote.ConnectResponse>(serviceImpl.Connect));
       serviceBinder.AddMethod(__Method_Send, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.MessageEnvelope>(serviceImpl.Send));
     }

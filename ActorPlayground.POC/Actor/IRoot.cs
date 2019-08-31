@@ -11,10 +11,6 @@ namespace ActorPlayground.POC
         Task<T> Send<T>(string target, IMessage message, CancellationToken cancellationToken);
         Task<T> Send<T>(string target, IMessage message, TimeSpan timeout);
         IActorProcess Spawn(Func<IActor> actorFactory, string adress);
-        IActorProcess SpawnLocal(Func<IActor> actorFactory);
-        void Start(string id);
-        void Stop(string id);
-        IActorProcess Get(string id);
-        void Remove(string id);
+        IActorProcess SpawnTransient(Func<IActor> actorFactory);
     }
 }

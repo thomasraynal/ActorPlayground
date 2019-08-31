@@ -10,11 +10,11 @@ namespace ActorPlayground.POC
     {
         public Task HandleFailure(IActorProcess self, Failure failure)
         {
-            self.Post(new Restart(self.Id.Value, failure.Reason), self);
+            self.Post(new Restart(self.Configuration.Id.Value, failure.Reason), self);
 
             foreach(var child in self.Children)
             {
-                child.Post(new Restart(child.Id.Value, failure.Reason), self);
+                child.Post(new Restart(child.Configuration.Id.Value, failure.Reason), self);
             }
 
             return Task.CompletedTask;

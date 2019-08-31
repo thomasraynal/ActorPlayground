@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StructureMap;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,15 +7,11 @@ namespace ActorPlayground.POC
 {
     public static class Factory
     {
-        public static IRoot Create(string adress)
+        public static IRoot Create<TRegistry>(IRootConfiguration configuration) where TRegistry : Registry
         {
-      
-            var supervisorStrategy = new OneForOneStrategy();
-            var serializer = new JsonNetSerializer();
-            var registry = new LocalActorRegistry(supervisorStrategy, serializer);
-            var cluster = new Root(registry, adress);
-
-            return cluster;
+            var container = new Container((conf) => conf.AddRegistry(Activator.CreateInstance<TRegistry>()));
+            container.Configure(conf => conf.For<IRootConfiguration>().Use(configuration));
+            return container.GetInstance<IRoot>();
         }
 
     }

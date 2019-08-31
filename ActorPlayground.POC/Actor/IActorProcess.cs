@@ -8,8 +8,10 @@ namespace ActorPlayground.POC
     public interface IActorProcess: ISupervisor
     {
         List<IActorProcess> Children { get; }
-        ActorId Id { get; }
+
+        IActorProcessConfiguration Configuration { get; }
         IActor Actor { get; }
+
         void Post(IMessage msg, IActorProcess sender);
         IActorProcess SpawnChild(Func<IActor> actorFactory);
         void Start();

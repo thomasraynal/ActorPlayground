@@ -1,4 +1,6 @@
 ﻿using ActorPlayground.POC.Message;
+using StructureMap;
+using StructureMap.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -11,11 +13,15 @@ namespace ActorPlayground.POC
     {
         private int _sequenceId;
         private readonly ISupervisorStrategy _supervisorStrategy;
+        private readonly ISerializer _serializer;
+        private readonly IContainer _container;
         private readonly Dictionary<string, IActorProcess> _actors = new Dictionary<string, IActorProcess>();
 
-        public LocalActorRegistry(ISupervisorStrategy supervisorStrategy, ISerializer serializer)
+        public LocalActorRegistry(IContainer container, ISupervisorStrategy supervisorStrategy, ISerializer serializer)
         {
             _supervisorStrategy = supervisorStrategy;
+            _serializer = serializer;
+            _container = container;
         }
 
         public IActorProcess AddTransient(Func<IActor> actorFactory, ActorType type, IActorProcess parent)
@@ -27,11 +33,16 @@ namespace ActorPlayground.POC
         {
             var id = NextId(adress, type);
 
-            var process = new ActorProcess(id, actorFactory, parent, this, _supervisorStrategy);
+            var configuration = new ActorProcessConfiguration(id, actorFactory, parent, type);
 
-            process.Start();
+            var args = new ExplicitArguments();
+            args.Set<IActorProcessConfiguration>(configuration);
+
+            var process = _container.GetInstance<IActorProcess>(args);
 
             _actors.Add(id.Value, process);
+
+            process.Start();
 
             return process;
         }

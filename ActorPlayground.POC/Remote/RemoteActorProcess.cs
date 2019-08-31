@@ -10,14 +10,13 @@ namespace ActorPlayground.POC.Remote
     {
         private readonly Server _server;
 
-        public RemoteActorProcess(ActorId id, Func<IActor> actorFactory, IActorProcess parent, IActorRegistry registry, ISupervisorStrategy supervisionStrategy, ISerializer serializer) : base(id, actorFactory, parent, registry, supervisionStrategy)
+        public RemoteActorProcess(IActorProcessConfiguration configuration, IActorRegistry registry, ISupervisorStrategy supervisionStrategy, ISerializer serializer) : base(configuration, registry, supervisionStrategy, serializer)
         {
-            var uri = new Uri(id.Value);
-
+          
             _server = new Server
             {
                 Services = { Remoting.BindService(new RemoteActorService(this, registry, serializer)) },
-                Ports = { new ServerPort(uri.Host, uri.Port, ServerCredentials.Insecure) }
+                Ports = { new ServerPort(configuration.Uri.Host, configuration.Uri.Port, ServerCredentials.Insecure) }
             };
 
             _server.Start();

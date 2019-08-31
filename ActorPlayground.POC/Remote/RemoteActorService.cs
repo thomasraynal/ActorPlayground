@@ -28,20 +28,25 @@ namespace ActorPlayground.POC.Remote
             return Task.FromResult(ConnectResponse);
         }
 
-        private void ProcessMessage(MessageEnvelope envelop)
+        private void ProcessEvent(MessageEnvelope envelop)
         {
             var message = _serializer.Deserialize(envelop.MessageData.ToByteArray(), Type.GetType(envelop.MessageType));
             _actorProcess.Post(message as IMessage, null);
         }
 
-        public async override Task Receive(IAsyncStreamReader<MessageBatch> requestStream, IServerStreamWriter<Unit> responseStream, ServerCallContext context)
+        private object ProcessCommand(MessageEnvelope envelop)
         {
-            //refacto : handle response
+            throw new NotImplementedException();
+        }
+
+        public async override Task Receive(IAsyncStreamReader<MessageBatch> requestStream, IServerStreamWriter<MessageBatch> responseStream, ServerCallContext context)
+        {
+
             await requestStream.ForEachAsync( batch =>
             {
                 foreach (var envelop in batch.Envelopes)
                 {
-                    ProcessMessage(envelop);
+                    ProcessEvent(envelop);
                 }
 
                 return Task.CompletedTask;

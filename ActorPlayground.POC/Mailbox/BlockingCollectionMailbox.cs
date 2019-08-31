@@ -58,7 +58,7 @@ namespace ActorPlayground.POC
                 }
                 catch (Exception ex)
                 {
-                    var failure = new Failure(msg.Actor.Id.Value, ex);
+                    var failure = new Failure(msg.Actor.Configuration.Id.Value, ex);
 
                     await _process.HandleFailure(failure);
 
