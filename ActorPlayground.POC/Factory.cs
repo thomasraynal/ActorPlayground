@@ -7,11 +7,10 @@ namespace ActorPlayground.POC
 {
     public static class Factory
     {
-        public static IRoot Create<TRegistry>(IRootConfiguration configuration) where TRegistry : Registry
+        public static IWorld Create<TRegistry>() where TRegistry : Registry
         {
             var container = new Container((conf) => conf.AddRegistry(Activator.CreateInstance<TRegistry>()));
-            container.Configure(conf => conf.For<IRootConfiguration>().Use(configuration));
-            return container.GetInstance<IRoot>();
+            return container.GetInstance<IWorld>();
         }
 
     }

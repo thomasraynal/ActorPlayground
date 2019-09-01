@@ -8,7 +8,6 @@ namespace ActorPlayground.POC
         ActorId Id { get; }
         IActorProcess Parent { get; }
         ActorType Type { get; }
-
         Uri Uri { get;  }
     }
 }

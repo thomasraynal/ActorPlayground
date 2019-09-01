@@ -7,9 +7,10 @@ namespace ActorPlayground.POC
     public enum ActorType
     {
         None,
-        Vanilla,
+        Transient,
+        Remote,
         Future,
         Registry,
-        Root
+        Directory
     }
 }

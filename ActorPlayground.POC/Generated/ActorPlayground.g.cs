@@ -26,21 +26,22 @@ namespace ActorPlayground.Remote {
           string.Concat(
             "ChVBY3RvclBsYXlncm91bmQucHJvdG8iIgoDUElEEg8KB0FkZHJlc3MYASAB",
             "KAkSCgoCSWQYAiABKAkiMwoMTWVzc2FnZUJhdGNoEiMKCWVudmVsb3BlcxgB",
-            "IAMoCzIQLk1lc3NhZ2VFbnZlbG9wZSJpCg9NZXNzYWdlRW52ZWxvcGUSFAoM",
-            "bWVzc2FnZV90eXBlGAEgASgJEhQKDG1lc3NhZ2VfZGF0YRgCIAEoDBIUCgxo",
-            "YXNfcmVzcG9uc2UYAyABKAgSFAoGc2VuZGVyGAQgASgLMgQuUElEIiYKDkNv",
-            "bm5lY3RSZXF1ZXN0EhQKBnNlbmRlchgBIAEoCzIELlBJRCIRCg9Db25uZWN0",
-            "UmVzcG9uc2UiBgoEVW5pdDKXAQoIUmVtb3RpbmcSLQoHUmVjZWl2ZRINLk1l",
-            "c3NhZ2VCYXRjaBoNLk1lc3NhZ2VCYXRjaCIAKAEwARIuCgdDb25uZWN0Eg8u",
-            "Q29ubmVjdFJlcXVlc3QaEC5Db25uZWN0UmVzcG9uc2UiABIsCgRTZW5kEhAu",
-            "TWVzc2FnZUVudmVsb3BlGhAuTWVzc2FnZUVudmVsb3BlIgBCGaoCFkFjdG9y",
-            "UGxheWdyb3VuZC5SZW1vdGViBnByb3RvMw=="));
+            "IAMoCzIQLk1lc3NhZ2VFbnZlbG9wZSJnCg9NZXNzYWdlRW52ZWxvcGUSFAoM",
+            "bWVzc2FnZV90eXBlGAEgASgJEhQKDG1lc3NhZ2VfZGF0YRgCIAEoDBISCgpp",
+            "c19jb21tYW5kGAMgASgIEhQKBnNlbmRlchgEIAEoCzIELlBJRCImCg5Db25u",
+            "ZWN0UmVxdWVzdBIUCgZzZW5kZXIYASABKAsyBC5QSUQiEQoPQ29ubmVjdFJl",
+            "c3BvbnNlIgYKBFVuaXQyWQoGV3JpdGVyEiwKBFNlbmQSEC5NZXNzYWdlRW52",
+            "ZWxvcGUaEC5NZXNzYWdlRW52ZWxvcGUiABIhCgRFbWl0EhAuTWVzc2FnZUVu",
+            "dmVsb3BlGgUuVW5pdCIAMmsKBlJlYWRlchIpCgxSZWNlaXZlRXZlbnQSEC5N",
+            "ZXNzYWdlRW52ZWxvcGUaBS5Vbml0IgASNgoOUmVjZWl2ZUNvbW1hbmQSEC5N",
+            "ZXNzYWdlRW52ZWxvcGUaEC5NZXNzYWdlRW52ZWxvcGUiAEIZqgIWQWN0b3JQ",
+            "bGF5Z3JvdW5kLlJlbW90ZWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.PID), global::ActorPlayground.Remote.PID.Parser, new[]{ "Address", "Id" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageBatch), global::ActorPlayground.Remote.MessageBatch.Parser, new[]{ "Envelopes" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageEnvelope), global::ActorPlayground.Remote.MessageEnvelope.Parser, new[]{ "MessageType", "MessageData", "HasResponse", "Sender" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageEnvelope), global::ActorPlayground.Remote.MessageEnvelope.Parser, new[]{ "MessageType", "MessageData", "IsCommand", "Sender" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.ConnectRequest), global::ActorPlayground.Remote.ConnectRequest.Parser, new[]{ "Sender" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.ConnectResponse), global::ActorPlayground.Remote.ConnectResponse.Parser, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.Unit), global::ActorPlayground.Remote.Unit.Parser, null, null, null, null)
@@ -355,7 +356,7 @@ namespace ActorPlayground.Remote {
     public MessageEnvelope(MessageEnvelope other) : this() {
       messageType_ = other.messageType_;
       messageData_ = other.messageData_;
-      hasResponse_ = other.hasResponse_;
+      isCommand_ = other.isCommand_;
       sender_ = other.sender_ != null ? other.sender_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -387,14 +388,14 @@ namespace ActorPlayground.Remote {
       }
     }
 
-    /// <summary>Field number for the "has_response" field.</summary>
-    public const int HasResponseFieldNumber = 3;
-    private bool hasResponse_;
+    /// <summary>Field number for the "is_command" field.</summary>
+    public const int IsCommandFieldNumber = 3;
+    private bool isCommand_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool HasResponse {
-      get { return hasResponse_; }
+    public bool IsCommand {
+      get { return isCommand_; }
       set {
-        hasResponse_ = value;
+        isCommand_ = value;
       }
     }
 
@@ -424,7 +425,7 @@ namespace ActorPlayground.Remote {
       }
       if (MessageType != other.MessageType) return false;
       if (MessageData != other.MessageData) return false;
-      if (HasResponse != other.HasResponse) return false;
+      if (IsCommand != other.IsCommand) return false;
       if (!object.Equals(Sender, other.Sender)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -434,7 +435,7 @@ namespace ActorPlayground.Remote {
       int hash = 1;
       if (MessageType.Length != 0) hash ^= MessageType.GetHashCode();
       if (MessageData.Length != 0) hash ^= MessageData.GetHashCode();
-      if (HasResponse != false) hash ^= HasResponse.GetHashCode();
+      if (IsCommand != false) hash ^= IsCommand.GetHashCode();
       if (sender_ != null) hash ^= Sender.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -457,9 +458,9 @@ namespace ActorPlayground.Remote {
         output.WriteRawTag(18);
         output.WriteBytes(MessageData);
       }
-      if (HasResponse != false) {
+      if (IsCommand != false) {
         output.WriteRawTag(24);
-        output.WriteBool(HasResponse);
+        output.WriteBool(IsCommand);
       }
       if (sender_ != null) {
         output.WriteRawTag(34);
@@ -479,7 +480,7 @@ namespace ActorPlayground.Remote {
       if (MessageData.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(MessageData);
       }
-      if (HasResponse != false) {
+      if (IsCommand != false) {
         size += 1 + 1;
       }
       if (sender_ != null) {
@@ -502,8 +503,8 @@ namespace ActorPlayground.Remote {
       if (other.MessageData.Length != 0) {
         MessageData = other.MessageData;
       }
-      if (other.HasResponse != false) {
-        HasResponse = other.HasResponse;
+      if (other.IsCommand != false) {
+        IsCommand = other.IsCommand;
       }
       if (other.sender_ != null) {
         if (sender_ == null) {
@@ -531,7 +532,7 @@ namespace ActorPlayground.Remote {
             break;
           }
           case 24: {
-            HasResponse = input.ReadBool();
+            IsCommand = input.ReadBool();
             break;
           }
           case 34: {

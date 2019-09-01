@@ -6,11 +6,13 @@ namespace ActorPlayground.POC
 {
     public interface IContext
     {
-        IEnumerable<string> Children { get; }
+        IEnumerable<IActorProcess> Children { get; }
 
         IMessage Message { get; }
 
-        IActorProcess Sender { get; }
+        ActorId Sender { get; }
+
+        IActorRegistry Registry { get; }
 
         void Respond(IMessage message);
     }

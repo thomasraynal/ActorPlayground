@@ -2,7 +2,7 @@
 syntax = "proto3";
 option csharp_namespace = "ActorPlayground.Remote";
 
-message PID {
+message Pid {
   string Address = 1;
   string Id = 2;
 }
@@ -14,21 +14,18 @@ message MessageBatch {
 message MessageEnvelope {
   string message_type = 1;
   bytes message_data = 2;
-  bool has_response = 3;
+  bool is_command = 3;
   PID sender = 4;
-}
-
-message ConnectRequest{
-  PID sender = 1;
-}
-
-message ConnectResponse{
 }
 
 message Unit {}
 
-service Remoting {
-  rpc Receive (stream MessageBatch) returns (stream MessageBatch) {}
-  rpc Connect (ConnectRequest) returns (ConnectResponse) {}
+service Writer {
   rpc Send (MessageEnvelope) returns (MessageEnvelope) {}
+  rpc Emit (MessageEnvelope) returns (Unit) {}
+}
+
+service Reader {
+  rpc ReceiveEvent (MessageEnvelope) returns (Unit) {}
+  rpc ReceiveCommand (MessageEnvelope) returns (MessageEnvelope) {}
 }

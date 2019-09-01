@@ -8,23 +8,26 @@ namespace ActorPlayground.POC
     internal readonly struct MessageContext : IContext
     {
 
-        public MessageContext(IActorProcess actor, IMessage message, IActorProcess sender)
+        public MessageContext(IActorProcess actor, IMessage message, ActorId sender, IActorRegistry actorRegistry)
         {
             Actor = actor;
             Message = message;
             Sender = sender;
+            Registry = actorRegistry;
         }
-        public IEnumerable<string> Children => Actor.Children.Select(actor => actor.Configuration.Id.Value);
+        public IEnumerable<IActorProcess> Children => Actor.Children;
 
         public IActorProcess Actor { get; }
 
         public IMessage Message { get; }
 
-        public IActorProcess Sender { get; }
+        public IActorRegistry Registry { get; }
+
+        public ActorId Sender { get; }
 
         public void Respond(IMessage message)
         {
-            Sender.Post(message, Actor);
+           // Sender.Post(message, Actor.Configuration.Id);
         }
     }
 }

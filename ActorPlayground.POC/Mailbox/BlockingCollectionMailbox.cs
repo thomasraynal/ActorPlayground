@@ -13,17 +13,19 @@ namespace ActorPlayground.POC
     {
         private BlockingCollection<MessageContext> _messages;
         private readonly IActorProcess _process;
+        private readonly IActorRegistry _registry;
         private CancellationTokenSource _cancel;
         private Task _workProc;
 
-        public BlockingCollectionMailbox(IActorProcess process)
+        public BlockingCollectionMailbox(IActorProcess process, IActorRegistry registry)
         {
             _process = process;
+            _registry = registry;
         }
 
         public void Post(IMessage msg, IActorProcess sender)
         {
-            var context = new MessageContext(_process, msg, sender);
+            var context = new MessageContext(_process, msg, sender.Configuration.Id, _registry);
 
             _messages.Add(context);
         }
@@ -38,8 +40,10 @@ namespace ActorPlayground.POC
 
         public void Stop()
         {
+            _messages.CompleteAdding();
             _cancel.Cancel();
-            while (!_messages.IsCompleted)  Thread.Sleep(10);
+          
+            while (!_messages.IsCompleted) Thread.Sleep(10);
         }
 
         private async Task DoWork()

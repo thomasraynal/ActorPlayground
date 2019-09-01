@@ -1,35 +1,31 @@
-﻿using ActorPlayground.POC.Message;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public class Root : IRoot
+    public class LocalWriter : IWriter
     {
         private readonly IActorRegistry _registry;
         private readonly IActorProcess _process;
-        
-        public Root(IActorRegistry registry, IRootConfiguration configuration)
+
+        public LocalWriter(IActorRegistry registry, IActorProcess process)
         {
             _registry = registry;
-            _registry.Add(() => this, configuration.Adress, ActorType.Root, null);
-        }
-
-        public IActorProcess Spawn(Func<IActor> actorFactory, string adress)
-        {
-            return _registry.Add(actorFactory, adress, ActorType.Vanilla, _process);
-        }
-
-        public IActorProcess SpawnTransient(Func<IActor> actorFactory)
-        {
-            return _registry.AddTransient(actorFactory, ActorType.Vanilla, _process);
+            _process = process;
         }
 
         public void Emit(string target, IMessage message)
         {
             var process = _registry.Get(target);
             process.Post(message, _process);
+        }
+
+        public void Emit(IMessage message)
+        {
+            throw new NotImplementedException();
         }
 
         public Task<T> Send<T>(string target, IMessage message, TimeSpan timeout)
@@ -50,17 +46,11 @@ namespace ActorPlayground.POC
         private Task<T> SendInternal<T>(string target, IMessage message, Future<T> future)
         {
             var targetProcess = _registry.Get(target);
-            var futureProcess = _registry.AddTransient(() => future, ActorType.Future, _process);
+            var futureProcess = _registry.Add(() => future, ActorType.Future, _process);
 
             targetProcess.Post(message, futureProcess);
 
             return future.UnderlyingTask;
         }
-
-        public Task Receive(IContext context)
-        {
-            return Task.CompletedTask;
-        }
-
     }
 }
