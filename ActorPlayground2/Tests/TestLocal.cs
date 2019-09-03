@@ -1,5 +1,4 @@
-﻿using ActorPlayground.POC.Remote;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using StructureMap;
 using System;
 using System.Collections.Generic;
@@ -15,8 +14,9 @@ namespace ActorPlayground.POC
             For<IActorRegistry>().Use<InMemoryActorRegistry>().Singleton();
             For<ISerializer>().Use<JsonNetSerializer>();
             For<ISupervisorStrategy>().Use<OneForOneStrategy>();
-            For<IWorld>().Use<World>();
+            For<IRoot>().Use<Root>();
             For<IActorProcess>().Use<ActorProcess>();
+            For<IRemoteActorProcess>().Use<RemoteActorProcess>();
         }
     }
 
@@ -41,7 +41,7 @@ namespace ActorPlayground.POC
             var msg = context.Message;
             if (msg is Hello r)
             {
-            
+
 
                 throw new Exception("boom");
             }
@@ -85,7 +85,7 @@ namespace ActorPlayground.POC
 
 
     [TestFixture]
-    public class TestPoc
+    public class TestLocal
     {
 
         [TestFixture]
@@ -117,13 +117,13 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldExecuteCommand()
             {
-     
+
                 var world = Factory.Create<TestRegistry>();
 
                 IActor actor() => new HelloActor2();
                 var process = world.Spawn(actor);
-          
-                var result = await world.Send<Hello>(process.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(20));
+
+                var result = await world.Send<Hello>(process.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
 
                 Assert.AreEqual("ok", result.Who);
 
@@ -133,7 +133,7 @@ namespace ActorPlayground.POC
             [Test]
             public async Task ShouldApplySupervisionStrategy()
             {
-         
+
                 var world = Factory.Create<TestRegistry>();
 
                 IActor actorFactory() => new FaultyActor();
@@ -198,3 +198,4 @@ namespace ActorPlayground.POC
     }
 
 }
+

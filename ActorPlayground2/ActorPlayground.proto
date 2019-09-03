@@ -1,0 +1,30 @@
+﻿
+syntax = "proto3";
+option csharp_namespace = "ActorPlayground.Remote";
+
+message Pid {
+  string Address = 1;
+  string Id = 2;
+}
+
+message MessageBatch {
+  repeated MessageEnvelope envelopes = 1;
+}
+
+message MessageEnvelope {
+  string message_type = 1;
+  bytes message_data = 2;
+  Pid sender = 4;
+}
+
+message Unit {}
+
+service Writer {
+  rpc Send (MessageEnvelope) returns (MessageEnvelope) {}
+  rpc Emit (MessageEnvelope) returns (Unit) {}
+}
+
+service Reader {
+  rpc ReceiveEvent (MessageEnvelope) returns (Unit) {}
+  rpc ReceiveCommand (MessageEnvelope) returns (MessageEnvelope) {}
+}
