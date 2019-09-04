@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    internal readonly struct MessageContext : IContext
+    internal readonly struct MessageContext : IMessageContext
     {
 
         public MessageContext(IActorProcess actor, IMessage message, ICanPost sender, IActorRegistry actorRegistry)

@@ -10,14 +10,14 @@ namespace ActorPlayground.POC
     public class TestRemote
     {
         [Test]
-        public async Task ShouldEmitEvent()
+        public async Task ShouldEmitEventFromWorld()
         {
             IActor actorFactory() => new HelloActorHandleEvent();
 
-            var world1 = Factory.Create<TestRegistry>();
+            var world1 = World.Create<TestRegistry>();
             var process1 = world1.Spawn(actorFactory, "http://127.0.0.1:8080");
 
-            var world2 = Factory.Create<TestRegistry>();
+            var world2 = World.Create<TestRegistry>();
             var process2 = world1.Spawn(actorFactory, "http://127.0.0.1:8181");
 
             world1.Emit("http://127.0.0.1:8181", new Hello(process1.Configuration.Id.Value));
@@ -36,87 +36,66 @@ namespace ActorPlayground.POC
         }
 
         [Test]
-        public async Task ShouldExecuteCommand()
+        public async Task ShouldEmitEventFromActor()
         {
-            IActor actor() => new HelloActorHandleCommand();
+            IActor actorFactory() => new HelloActorHandleEvent();
 
-            var world1 = Factory.Create<TestRegistry>();
-            var process1 = world1.Spawn(actor, "http://localhost:8080");
+            var world1 = World.Create<TestRegistry>();
+            var process1 = world1.Spawn(actorFactory, "http://127.0.0.1:8080");
 
-            var world2 = Factory.Create<TestRegistry>();
-            var process2 = world2.Spawn(actor, "http://localhost:8181");
+            var world2 = World.Create<TestRegistry>();
+            var process2 = world1.Spawn(actorFactory, "http://127.0.0.1:8181");
 
-            var result = await world1.Send<Hello>(process2.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
+            process1.Emit("http://127.0.0.1:8181", new Hello(process1.Configuration.Id.Value));
 
-            Assert.AreEqual("ok", result.Who);
+            await Task.Delay(10);
+
+            var actor = process2.Actor as HelloActorHandleEvent;
+
+            Assert.IsNotNull(actor);
+
+            Assert.AreEqual(1, actor.Received.Count);
 
             world1.Dispose();
             world2.Dispose();
+
         }
 
-        //[Test]
-        //public async Task ShouldApplySupervisionStrategy()
-        //{
-
-        //    var world = Factory.Create<TestRegistry>();
-
-        //    IActor actorFactory() => new FaultyActor();
-        //    var process = world.Spawn(actorFactory, "http://localhost:8080");
-
-        //    var actor = process.Actor as FaultyActor;
-
-        //    Assert.IsNotNull(actor);
-
-        //    var idBefore = actor.Id;
-
-        //    world.Emit(process.Configuration.Id.Value, new Hello(process.Configuration.Id.Value));
-
-        //    await Task.Delay(10);
-
-        //    actor = process.Actor as FaultyActor;
-
-        //    var idAfter = actor.Id;
-
-        //    Assert.IsNotNull(actor);
-
-        //    Assert.AreNotEqual(idBefore, idAfter);
-
-        //    world.Dispose();
-
-        //}
-
-        //[Test]
-        //public async Task ShouldSpawnChildActor()
-        //{
-
-        //    var world = Factory.Create<TestRegistry>();
-
-        //    IActor actorFactory() => new FaultyActor();
-        //    var parent = world.Spawn(actorFactory, "http://localhost:8080");
-
-        //    var child = parent.SpawnChild(actorFactory);
-        //    var childActor = child.Actor as FaultyActor;
-
-        //    Assert.IsNotNull(childActor);
-
-        //    var idBefore = childActor.Id;
-
-        //    world.Emit(parent.Configuration.Id.Value, new Hello(parent.Configuration.Id.Value));
-
-        //    await Task.Delay(1000);
-
-        //    childActor = child.Actor as FaultyActor;
-
-        //    var idAfter = childActor.Id;
-
-        //    Assert.IsNotNull(childActor);
-
-        //    Assert.AreNotEqual(idBefore, idAfter);
-
-        //    world.Dispose();
 
 
-        //}
+        [Test]
+        public async Task ShouldApplySupervisionStrategy()
+        {
+            IActor actorFactory() => new FaultyActor();
+
+            var world1 = World.Create<TestRegistry>();
+            var process1 = world1.Spawn(actorFactory, "http://localhost:8080");
+
+            var world2 = World.Create<TestRegistry>();
+            var process2 = world2.Spawn(actorFactory, "http://localhost:8181");
+
+            var actor = process1.Actor as FaultyActor;
+
+            Assert.IsNotNull(actor);
+
+            var idBefore = actor.Id;
+
+            world2.Emit("http://localhost:8080", new Hello(process2.Configuration.Id.Value));
+
+            await Task.Delay(10);
+
+            actor = process1.Actor as FaultyActor;
+
+            var idAfter = actor.Id;
+
+            Assert.IsNotNull(actor);
+
+            Assert.AreNotEqual(idBefore, idAfter);
+
+            world1.Dispose();
+            world2.Dispose();
+
+        }
 
     }
 }

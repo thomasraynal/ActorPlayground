@@ -28,10 +28,9 @@ namespace ActorPlayground.Remote {
             "KAkSCgoCSWQYAiABKAkiMwoMTWVzc2FnZUJhdGNoEiMKCWVudmVsb3BlcxgB",
             "IAMoCzIQLk1lc3NhZ2VFbnZlbG9wZSJTCg9NZXNzYWdlRW52ZWxvcGUSFAoM",
             "bWVzc2FnZV90eXBlGAEgASgJEhQKDG1lc3NhZ2VfZGF0YRgCIAEoDBIUCgZz",
-            "ZW5kZXIYBCABKAsyBC5QaWQiBgoEVW5pdDJcCglUcmFuc3BvcnQSLAoEU2Vu",
-            "ZBIQLk1lc3NhZ2VFbnZlbG9wZRoQLk1lc3NhZ2VFbnZlbG9wZSIAEiEKBEVt",
-            "aXQSEC5NZXNzYWdlRW52ZWxvcGUaBS5Vbml0IgBCGaoCFkFjdG9yUGxheWdy",
-            "b3VuZC5SZW1vdGViBnByb3RvMw=="));
+            "ZW5kZXIYBCABKAsyBC5QaWQiBgoEVW5pdDIuCglUcmFuc3BvcnQSIQoEU2Vu",
+            "ZBIQLk1lc3NhZ2VFbnZlbG9wZRoFLlVuaXQiAEIZqgIWQWN0b3JQbGF5Z3Jv",
+            "dW5kLlJlbW90ZWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {

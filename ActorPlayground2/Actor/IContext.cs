@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface IContext
+    public interface IMessageContext
     {
         IEnumerable<IActorProcess> Children { get; }
 

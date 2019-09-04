@@ -15,17 +15,10 @@ namespace ActorPlayground.Remote {
     static readonly grpc::Marshaller<global::ActorPlayground.Remote.MessageEnvelope> __Marshaller_MessageEnvelope = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ActorPlayground.Remote.MessageEnvelope.Parser.ParseFrom);
     static readonly grpc::Marshaller<global::ActorPlayground.Remote.Unit> __Marshaller_Unit = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ActorPlayground.Remote.Unit.Parser.ParseFrom);
 
-    static readonly grpc::Method<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.MessageEnvelope> __Method_Send = new grpc::Method<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.MessageEnvelope>(
+    static readonly grpc::Method<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.Unit> __Method_Send = new grpc::Method<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.Unit>(
         grpc::MethodType.Unary,
         __ServiceName,
         "Send",
-        __Marshaller_MessageEnvelope,
-        __Marshaller_MessageEnvelope);
-
-    static readonly grpc::Method<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.Unit> __Method_Emit = new grpc::Method<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.Unit>(
-        grpc::MethodType.Unary,
-        __ServiceName,
-        "Emit",
         __Marshaller_MessageEnvelope,
         __Marshaller_Unit);
 
@@ -39,12 +32,7 @@ namespace ActorPlayground.Remote {
     [grpc::BindServiceMethod(typeof(Transport), "BindService")]
     public abstract partial class TransportBase
     {
-      public virtual global::System.Threading.Tasks.Task<global::ActorPlayground.Remote.MessageEnvelope> Send(global::ActorPlayground.Remote.MessageEnvelope request, grpc::ServerCallContext context)
-      {
-        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
-      }
-
-      public virtual global::System.Threading.Tasks.Task<global::ActorPlayground.Remote.Unit> Emit(global::ActorPlayground.Remote.MessageEnvelope request, grpc::ServerCallContext context)
+      public virtual global::System.Threading.Tasks.Task<global::ActorPlayground.Remote.Unit> Send(global::ActorPlayground.Remote.MessageEnvelope request, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -74,37 +62,21 @@ namespace ActorPlayground.Remote {
       {
       }
 
-      public virtual global::ActorPlayground.Remote.MessageEnvelope Send(global::ActorPlayground.Remote.MessageEnvelope request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual global::ActorPlayground.Remote.Unit Send(global::ActorPlayground.Remote.MessageEnvelope request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
         return Send(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
-      public virtual global::ActorPlayground.Remote.MessageEnvelope Send(global::ActorPlayground.Remote.MessageEnvelope request, grpc::CallOptions options)
+      public virtual global::ActorPlayground.Remote.Unit Send(global::ActorPlayground.Remote.MessageEnvelope request, grpc::CallOptions options)
       {
         return CallInvoker.BlockingUnaryCall(__Method_Send, null, options, request);
       }
-      public virtual grpc::AsyncUnaryCall<global::ActorPlayground.Remote.MessageEnvelope> SendAsync(global::ActorPlayground.Remote.MessageEnvelope request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncUnaryCall<global::ActorPlayground.Remote.Unit> SendAsync(global::ActorPlayground.Remote.MessageEnvelope request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
         return SendAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
-      public virtual grpc::AsyncUnaryCall<global::ActorPlayground.Remote.MessageEnvelope> SendAsync(global::ActorPlayground.Remote.MessageEnvelope request, grpc::CallOptions options)
+      public virtual grpc::AsyncUnaryCall<global::ActorPlayground.Remote.Unit> SendAsync(global::ActorPlayground.Remote.MessageEnvelope request, grpc::CallOptions options)
       {
         return CallInvoker.AsyncUnaryCall(__Method_Send, null, options, request);
-      }
-      public virtual global::ActorPlayground.Remote.Unit Emit(global::ActorPlayground.Remote.MessageEnvelope request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
-      {
-        return Emit(request, new grpc::CallOptions(headers, deadline, cancellationToken));
-      }
-      public virtual global::ActorPlayground.Remote.Unit Emit(global::ActorPlayground.Remote.MessageEnvelope request, grpc::CallOptions options)
-      {
-        return CallInvoker.BlockingUnaryCall(__Method_Emit, null, options, request);
-      }
-      public virtual grpc::AsyncUnaryCall<global::ActorPlayground.Remote.Unit> EmitAsync(global::ActorPlayground.Remote.MessageEnvelope request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
-      {
-        return EmitAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
-      }
-      public virtual grpc::AsyncUnaryCall<global::ActorPlayground.Remote.Unit> EmitAsync(global::ActorPlayground.Remote.MessageEnvelope request, grpc::CallOptions options)
-      {
-        return CallInvoker.AsyncUnaryCall(__Method_Emit, null, options, request);
       }
       /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
       protected override TransportClient NewInstance(ClientBaseConfiguration configuration)
@@ -118,8 +90,7 @@ namespace ActorPlayground.Remote {
     public static grpc::ServerServiceDefinition BindService(TransportBase serviceImpl)
     {
       return grpc::ServerServiceDefinition.CreateBuilder()
-          .AddMethod(__Method_Send, serviceImpl.Send)
-          .AddMethod(__Method_Emit, serviceImpl.Emit).Build();
+          .AddMethod(__Method_Send, serviceImpl.Send).Build();
     }
 
     /// <summary>Register service method with a service binder with or without implementation. Useful when customizing the  service binding logic.
@@ -128,8 +99,7 @@ namespace ActorPlayground.Remote {
     /// <param name="serviceImpl">An object implementing the server-side handling logic.</param>
     public static void BindService(grpc::ServiceBinderBase serviceBinder, TransportBase serviceImpl)
     {
-      serviceBinder.AddMethod(__Method_Send, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.MessageEnvelope>(serviceImpl.Send));
-      serviceBinder.AddMethod(__Method_Emit, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.Unit>(serviceImpl.Emit));
+      serviceBinder.AddMethod(__Method_Send, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::ActorPlayground.Remote.MessageEnvelope, global::ActorPlayground.Remote.Unit>(serviceImpl.Send));
     }
 
   }

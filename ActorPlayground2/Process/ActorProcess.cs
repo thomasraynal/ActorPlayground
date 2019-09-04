@@ -104,6 +104,11 @@ namespace ActorPlayground.POC
             }
         }
 
-    
+        public void Emit(string targetId, IMessage message)
+        {
+            var process = _registry.Get(targetId);
+            process.Post(message, null);
+        }
+
     }
 }

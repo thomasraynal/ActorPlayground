@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface ICanSpawn
+    public interface ICanEmit
     {
-        IActorProcess SpawnChild(Func<IActor> actorFactory);
+        void Emit(string targetId, IMessage message);
     }
 }

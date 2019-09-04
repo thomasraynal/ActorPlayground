@@ -14,6 +14,7 @@ namespace ActorPlayground.POC
         private int _sequenceId;
         private readonly IContainer _container;
         private readonly IRemoteActorProxyProvider _remoteActorProxyProvider;
+        private readonly string _prefix;
         private readonly ConcurrentDictionary<string, IActorProcess> _actors = new ConcurrentDictionary<string, IActorProcess>();
 
         //refacto: IActorRegistry as Actor
@@ -22,7 +23,10 @@ namespace ActorPlayground.POC
             _container = container;
             _remoteActorProxyProvider = remoteActorProxyProvider;
 
-         //   Add(() => this, ActorType.Registry, null);
+            //refacto: config
+            _prefix = DateTime.Now.Ticks.ToString();
+
+            //   Add(() => this, ActorType.Registry, null);
         }
 
         public IActorProcess AddInternal<TActorProcess>(IActorProcessConfiguration configuration) where TActorProcess: IActorProcess
@@ -42,7 +46,7 @@ namespace ActorPlayground.POC
 
         public IActorProcess Add(Func<IActor> actorFactory, ActorType type, ICanPost parent)
         {
-            var id = NextId("nohost", type);
+            var id = NextId(null, type);
             var configuration = new ActorProcessConfiguration(id, actorFactory, parent, type);
 
             return AddInternal<IActorProcess>(configuration);
@@ -61,8 +65,9 @@ namespace ActorPlayground.POC
 
             if (!_actors.ContainsKey(id))
             {
-                if (Uri.TryCreate(id, UriKind.Absolute, out var uriResult) &&
-                uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)
+                var canCreate = Uri.TryCreate(id, UriKind.Absolute, out var uriResult);
+
+                if (canCreate && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
                 {
                    return _remoteActorProxyProvider.Get(id);
                 }
@@ -88,8 +93,9 @@ namespace ActorPlayground.POC
         //refacto : id provider
         private ActorId NextId(string adress, ActorType type)
         {
+
             var counter = Interlocked.Increment(ref _sequenceId);
-            var id = "$" + counter;
+            var id = _prefix + "$" + counter;
 
             return new ActorId(id, adress, type);
         }
@@ -109,9 +115,10 @@ namespace ActorPlayground.POC
             _actors.Clear();
         }
 
-        public Task Receive(IContext context)
+        public Task Receive(IMessageContext context)
         {
             throw new NotImplementedException();
         }
+
     }
 }

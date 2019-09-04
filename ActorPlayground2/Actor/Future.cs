@@ -37,7 +37,7 @@ namespace ActorPlayground.POC
 
         public Task<T> UnderlyingTask { get; }
 
-        public Task Receive(IContext context)
+        public Task Receive(IMessageContext context)
         {
             _task.TrySetResult((T)context.Message);
 

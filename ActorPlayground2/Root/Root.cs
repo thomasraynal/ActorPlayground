@@ -24,35 +24,30 @@ namespace ActorPlayground.POC
             return _registry.Add(actorFactory, ActorType.Transient, null);
         }
 
-        public void Emit(string target, IMessage message)
+        public void Emit(string targetId, IMessage message)
         {
-            var process = _registry.Get(target);
+            var process = _registry.Get(targetId);
             process.Post(message, null);
         }
 
-        public void Emit(IMessage message)
+        public Task<T> Send<T>(string targetId, IMessage message, TimeSpan timeout) where T: IMessage
         {
-            throw new NotImplementedException();
+            return SendInternal(targetId, message, new Future<T>(timeout));
         }
 
-        public Task<T> Send<T>(string target, IMessage message, TimeSpan timeout)
+        public Task<T> Send<T>(string targetId, IMessage message, CancellationToken cancellationToken) where T : IMessage
         {
-            return SendInternal(target, message, new Future<T>(timeout));
+            return SendInternal(targetId, message, new Future<T>(cancellationToken));
         }
 
-        public Task<T> Send<T>(string target, IMessage message, CancellationToken cancellationToken)
+        public Task<T> Send<T>(string targetId, IMessage message) where T : IMessage
         {
-            return SendInternal(target, message, new Future<T>(cancellationToken));
+            return SendInternal(targetId, message, new Future<T>());
         }
 
-        public Task<T> Send<T>(string target, IMessage message)
+        private Task<T> SendInternal<T>(string targetId, IMessage message, Future<T> future) where T : IMessage
         {
-            return SendInternal(target, message, new Future<T>());
-        }
-
-        private Task<T> SendInternal<T>(string target, IMessage message, Future<T> future)
-        {
-            var targetProcess = _registry.Get(target);
+            var targetProcess = _registry.Get(targetId);
             var futureProcess = _registry.Add(() => future, ActorType.Future, null);
 
             targetProcess.Post(message, futureProcess);
@@ -69,6 +64,6 @@ namespace ActorPlayground.POC
             _registry.Dispose();
         }
 
-       
+
     }
 }

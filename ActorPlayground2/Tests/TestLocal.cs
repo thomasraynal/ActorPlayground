@@ -37,7 +37,7 @@ namespace ActorPlayground.POC
     {
         public Guid Id = Guid.NewGuid();
 
-        public Task Receive(IContext context)
+        public Task Receive(IMessageContext context)
         {
             var msg = context.Message;
             if (msg is Hello r)
@@ -58,7 +58,7 @@ namespace ActorPlayground.POC
 
         public List<Hello> Received { get; } = new List<Hello>();
 
-        public Task Receive(IContext context)
+        public Task Receive(IMessageContext context)
         {
             var msg = context.Message;
             if (msg is Hello r)
@@ -71,7 +71,7 @@ namespace ActorPlayground.POC
 
     public class HelloActorHandleCommand : IActor
     {
-        public Task Receive(IContext context)
+        public Task Receive(IMessageContext context)
         {
             var msg = context.Message;
             if (msg is Hello r)
@@ -96,7 +96,7 @@ namespace ActorPlayground.POC
             public async Task ShouldEmitEvent()
             {
 
-                var world = Factory.Create<TestRegistry>();
+                var world = World.Create<TestRegistry>();
 
                 IActor actorFactory() => new HelloActorHandleEvent();
                 var process = world.Spawn(actorFactory);
@@ -119,7 +119,7 @@ namespace ActorPlayground.POC
             public async Task ShouldExecuteCommand()
             {
 
-                var world = Factory.Create<TestRegistry>();
+                var world = World.Create<TestRegistry>();
 
                 IActor actor() => new HelloActorHandleCommand();
                 var process = world.Spawn(actor);
@@ -135,7 +135,7 @@ namespace ActorPlayground.POC
             public async Task ShouldApplySupervisionStrategy()
             {
 
-                var world = Factory.Create<TestRegistry>();
+                var world = World.Create<TestRegistry>();
 
                 IActor actorFactory() => new FaultyActor();
                 var process = world.Spawn(actorFactory);
@@ -166,7 +166,7 @@ namespace ActorPlayground.POC
             public async Task ShouldSpawnChildActor()
             {
 
-                var world = Factory.Create<TestRegistry>();
+                var world = World.Create<TestRegistry>();
 
                 IActor actorFactory() => new FaultyActor();
                 var parent = world.Spawn(actorFactory);

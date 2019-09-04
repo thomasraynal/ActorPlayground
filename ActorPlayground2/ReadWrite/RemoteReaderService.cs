@@ -44,20 +44,14 @@ namespace ActorPlayground.POC.Remote
 
         }
 
-        public override Task<MessageEnvelope> Send(MessageEnvelope request, ServerCallContext context)
-        {
-            var message = _serializer.Deserialize(request.MessageData.ToByteArray(), Type.GetType(request.MessageType)) as IMessage;
-
-            return base.Send(request, context);
-        }
-
-        public override Task<Unit> Emit(MessageEnvelope request, ServerCallContext context)
+        public override Task<Unit> Send(MessageEnvelope request, ServerCallContext context)
         {
             var (message, sender) = Deserialize(request);
 
             _self.Post(message, sender);
 
             return Task.FromResult(Unit);
+
         }
     }
 }

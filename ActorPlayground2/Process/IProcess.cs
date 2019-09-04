@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public interface IActor
+    public interface IProcess
     {
-        Task Receive(IMessageContext context);
+        void Start();
+        void Stop();
     }
 }

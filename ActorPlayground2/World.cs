@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public static class Factory
+    public static class World
     {
         public static IRoot Create<TRegistry>() where TRegistry : Registry
         {

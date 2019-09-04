@@ -20,6 +20,5 @@ message MessageEnvelope {
 message Unit {}
 
 service Transport {
-  rpc Send (MessageEnvelope) returns (MessageEnvelope) {}
-  rpc Emit (MessageEnvelope) returns (Unit) {}
+  rpc Send (MessageEnvelope) returns (Unit) {}
 }

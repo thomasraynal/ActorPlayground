@@ -11,14 +11,14 @@ namespace ActorPlayground.POC.Remote
 {
     public class RemoteWriterService : IWriter, IDisposable
     {
-        private readonly ICanPost _remote;
+
         private readonly ISerializer _serializer;
         private readonly Channel _channel;
         private readonly Transport.TransportClient _client;
 
         public RemoteWriterService(ICanPost remote, ISerializer serializer)
         {
-            _remote = remote;
+
             _serializer = serializer;
 
             var uri = new Uri(remote.Id.Adress);
@@ -43,39 +43,28 @@ namespace ActorPlayground.POC.Remote
             };
         }
 
-        private IMessage Deserialize(MessageEnvelope envelope)
-        {
-            return _serializer.Deserialize(envelope.MessageData.ToByteArray(), Type.GetType(envelope.MessageType)) as IMessage;
-        }
-
         public void Emit(IMessage message, ICanPost sender)
         {
-            _client.Emit(Serialize(message, sender));
+            _client.Send(Serialize(message, sender));
         }
 
         public Task Send<T>(IMessage message, ICanPost sender)
         {
-            var result = _client.Send(Serialize(message, sender));
-
-            sender.Post(Deserialize(result), _remote);
+            _client.Send(Serialize(message, sender));
 
             return Task.CompletedTask;
         }
 
         public Task Send<T>(IMessage message, ICanPost sender, CancellationToken cancellationToken)
         {
-            var result = _client.Send(Serialize(message, sender), cancellationToken: cancellationToken);
-
-            sender.Post(Deserialize(result), _remote);
+            _client.Send(Serialize(message, sender), cancellationToken: cancellationToken);
 
             return Task.CompletedTask;
         }
 
         public Task Send<T>(IMessage message, ICanPost sender, TimeSpan timeout)
         {
-            var result = _client.Send(Serialize(message, sender), deadline: DateTime.Now.Add(timeout));
-
-            sender.Post(Deserialize(result), _remote);
+            _client.Send(Serialize(message, sender), deadline: DateTime.Now.Add(timeout));
 
             return Task.CompletedTask;
         }
