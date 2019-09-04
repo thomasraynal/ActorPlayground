@@ -2,10 +2,8 @@
 
 namespace ActorPlayground.POC
 {
-    public interface IMailbox
+    public interface IMailbox : IProcess
     {
-        void Post(IMessage msg, ICanPost sender);
-        void Start();
-        void Stop();
+        void Post(IEvent msg, ICanPost sender);
     }
 }

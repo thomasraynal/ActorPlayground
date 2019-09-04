@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface ISystemMessage : IMessage
+    public interface IEvent
     {
-        string Who { get; }
+        bool IsSystemMessage { get; }
     }
 }

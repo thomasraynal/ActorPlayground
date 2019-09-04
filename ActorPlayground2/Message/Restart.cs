@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.POC.Message
 {
-    public class Restart : ISystemMessage
+    public class Restart : ISystemEvent
     {
 
         public Restart(string who, Exception reason)

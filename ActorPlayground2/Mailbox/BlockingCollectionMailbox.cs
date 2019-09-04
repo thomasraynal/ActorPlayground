@@ -23,7 +23,7 @@ namespace ActorPlayground.POC
             _registry = registry;
         }
 
-        public void Post(IMessage msg, ICanPost sender)
+        public void Post(IEvent msg, ICanPost sender)
         {
             var context = new MessageContext(_process, msg, sender, _registry);
 

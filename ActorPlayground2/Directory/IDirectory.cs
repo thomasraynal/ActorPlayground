@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public class Create
+    interface IDirectory : IActorProcess
     {
     }
 }

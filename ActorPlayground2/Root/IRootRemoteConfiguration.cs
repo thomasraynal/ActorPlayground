@@ -4,8 +4,9 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface IMessage
+    public interface IRootRemoteConfiguration
     {
-        bool IsSystemMessage { get; }
+        string Adress { get; }
     }
 }
+

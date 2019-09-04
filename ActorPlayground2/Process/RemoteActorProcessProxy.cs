@@ -15,7 +15,7 @@ namespace ActorPlayground.POC
 
         public ActorId Id => _remote;
 
-        public void Post(IMessage msg, ICanPost sender)
+        public void Post(IEvent msg, ICanPost sender)
         {
             _writer.Emit(msg, sender);
         }

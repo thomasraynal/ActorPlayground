@@ -33,7 +33,7 @@ namespace ActorPlayground.POC.Remote
             _channel.ShutdownAsync().Wait();
         }
 
-        private MessageEnvelope Serialize(IMessage message, ICanPost sender)
+        private MessageEnvelope Serialize(IEvent message, ICanPost sender)
         {
             return new MessageEnvelope()
             {
@@ -43,26 +43,26 @@ namespace ActorPlayground.POC.Remote
             };
         }
 
-        public void Emit(IMessage message, ICanPost sender)
+        public void Emit(IEvent message, ICanPost sender)
         {
             _client.Send(Serialize(message, sender));
         }
 
-        public Task Send<T>(IMessage message, ICanPost sender)
+        public Task Send<T>(IEvent message, ICanPost sender)
         {
             _client.Send(Serialize(message, sender));
 
             return Task.CompletedTask;
         }
 
-        public Task Send<T>(IMessage message, ICanPost sender, CancellationToken cancellationToken)
+        public Task Send<T>(IEvent message, ICanPost sender, CancellationToken cancellationToken)
         {
             _client.Send(Serialize(message, sender), cancellationToken: cancellationToken);
 
             return Task.CompletedTask;
         }
 
-        public Task Send<T>(IMessage message, ICanPost sender, TimeSpan timeout)
+        public Task Send<T>(IEvent message, ICanPost sender, TimeSpan timeout)
         {
             _client.Send(Serialize(message, sender), deadline: DateTime.Now.Add(timeout));
 

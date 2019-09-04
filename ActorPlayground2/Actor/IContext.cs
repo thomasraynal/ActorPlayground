@@ -8,10 +8,10 @@ namespace ActorPlayground.POC
     {
         IEnumerable<IActorProcess> Children { get; }
 
-        IMessage Message { get; }
+        IEvent Message { get; }
 
         IActorRegistry Registry { get; }
 
-        void Respond(IMessage message);
+        void Respond(IEvent message);
     }
 }

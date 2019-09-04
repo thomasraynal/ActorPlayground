@@ -21,13 +21,25 @@ namespace ActorPlayground.POC
         }
     }
 
-    public class Hello : IMessage
+    public class Hello : IEvent
     {
         public string Who { get; }
 
         public bool IsSystemMessage => false;
 
         public Hello(string who)
+        {
+            Who = who;
+        }
+    }
+
+    public class SayHello : ICommand
+    {
+        public string Who { get; }
+
+        public bool IsSystemMessage => false;
+
+        public SayHello(string who)
         {
             Who = who;
         }
@@ -74,10 +86,10 @@ namespace ActorPlayground.POC
         public Task Receive(IMessageContext context)
         {
             var msg = context.Message;
-            if (msg is Hello r)
+            if (msg is SayHello r)
             {
 
-                context.Respond(new Hello("ok"));
+                context.Respond(new SayHello("ok"));
             }
 
             return Task.CompletedTask;
@@ -124,7 +136,7 @@ namespace ActorPlayground.POC
                 IActor actor() => new HelloActorHandleCommand();
                 var process = world.Spawn(actor);
 
-                var result = await world.Send<Hello>(process.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
+                var result = await world.Send<SayHello>(process.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
 
                 Assert.AreEqual("ok", result.Who);
 

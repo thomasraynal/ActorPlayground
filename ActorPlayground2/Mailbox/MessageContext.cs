@@ -8,7 +8,7 @@ namespace ActorPlayground.POC
     internal readonly struct MessageContext : IMessageContext
     {
 
-        public MessageContext(IActorProcess actor, IMessage message, ICanPost sender, IActorRegistry actorRegistry)
+        public MessageContext(IActorProcess actor, IEvent message, ICanPost sender, IActorRegistry actorRegistry)
         {
             Actor = actor;
             Message = message;
@@ -21,11 +21,11 @@ namespace ActorPlayground.POC
 
         public ICanPost Sender { get; }
 
-        public IMessage Message { get; }
+        public IEvent Message { get; }
 
         public IActorRegistry Registry { get; }
 
-        public void Respond(IMessage message)
+        public void Respond(IEvent message)
         {
            Sender.Post(message, Actor);
         }

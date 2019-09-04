@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.POC.Message
 {
-    public class Stop : ISystemMessage
+    public class Stop : ISystemEvent
     {
         public Stop(string who)
         {

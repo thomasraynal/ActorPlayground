@@ -25,7 +25,7 @@ namespace ActorPlayground.POC.Remote
             _registry = registry;
         }
 
-        private MessageEnvelope Serialize(IMessage message, ICanPost sender)
+        private MessageEnvelope Serialize(IEvent message, ICanPost sender)
         {
             return new MessageEnvelope()
             {
@@ -35,9 +35,9 @@ namespace ActorPlayground.POC.Remote
             };
         }
 
-        private (IMessage message, ICanPost sender) Deserialize(MessageEnvelope envelope)
+        private (IEvent message, ICanPost sender) Deserialize(MessageEnvelope envelope)
         {
-            var message = _serializer.Deserialize(envelope.MessageData.ToByteArray(), Type.GetType(envelope.MessageType)) as IMessage;
+            var message = _serializer.Deserialize(envelope.MessageData.ToByteArray(), Type.GetType(envelope.MessageType)) as IEvent;
             var sender = envelope.Sender == null ? null : _registry.Get(envelope.Sender.Address);
 
             return (message, sender);

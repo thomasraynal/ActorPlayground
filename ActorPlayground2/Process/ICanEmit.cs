@@ -6,6 +6,6 @@ namespace ActorPlayground.POC
 {
     public interface ICanEmit
     {
-        void Emit(string targetId, IMessage message);
+        void Emit(string targetId, IEvent message);
     }
 }

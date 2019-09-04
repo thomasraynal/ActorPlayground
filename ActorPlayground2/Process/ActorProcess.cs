@@ -43,7 +43,7 @@ namespace ActorPlayground.POC
             return child;
 
         }
-        public void Post(IMessage msg, ICanPost sender)
+        public void Post(IEvent msg, ICanPost sender)
         {
             _mailbox.Post(msg, sender);
         }
@@ -65,7 +65,7 @@ namespace ActorPlayground.POC
             await _supervisionStrategy.HandleFailure(this, failure);
         }
 
-        public void HandleSystemMessage(IMessage message)
+        public void HandleSystemMessage(IEvent message)
         {
             switch (message)
             {
@@ -104,7 +104,7 @@ namespace ActorPlayground.POC
             }
         }
 
-        public void Emit(string targetId, IMessage message)
+        public void Emit(string targetId, IEvent message)
         {
             var process = _registry.Get(targetId);
             process.Post(message, null);

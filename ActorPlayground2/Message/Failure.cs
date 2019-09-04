@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.POC.Message
 {
-    public class Failure : ISystemMessage
+    public class Failure : ISystemEvent
     {
         public Failure(string who, Exception reason)
         {

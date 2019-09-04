@@ -11,6 +11,6 @@ namespace ActorPlayground.POC
         IActorProcessConfiguration Configuration { get; }
         IActor Actor { get; }
         IActorProcess SpawnChild(Func<IActor> actorFactory);
-        void HandleSystemMessage(IMessage message);
+        void HandleSystemMessage(IEvent message);
     }
 }
