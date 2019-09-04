@@ -16,13 +16,11 @@ namespace ActorPlayground.POC
             _serializer = serializer;
         }
 
-        public ICanPost Get(ActorId remote, IActorProcess sender)
+        public ICanPost Get(string id)
         {
-            var key = $"{sender.Configuration.Id}=>{remote}";
-
-            return _proxyCache.GetOrAdd(key, (_) =>
+            return _proxyCache.GetOrAdd(id, (_) =>
             {
-                return new RemoteActorProcessProxy(remote, sender, _serializer);
+                return new RemoteActorProcessProxy(new ActorId(id, id, ActorType.Remote), _serializer);
 
             });
         }

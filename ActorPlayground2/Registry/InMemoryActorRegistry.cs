@@ -13,12 +13,14 @@ namespace ActorPlayground.POC
     {
         private int _sequenceId;
         private readonly IContainer _container;
+        private readonly IRemoteActorProxyProvider _remoteActorProxyProvider;
         private readonly ConcurrentDictionary<string, IActorProcess> _actors = new ConcurrentDictionary<string, IActorProcess>();
 
         //refacto: IActorRegistry as Actor
-        public InMemoryActorRegistry(IContainer container)
+        public InMemoryActorRegistry(IContainer container, IRemoteActorProxyProvider remoteActorProxyProvider)
         {
             _container = container;
+            _remoteActorProxyProvider = remoteActorProxyProvider;
 
          //   Add(() => this, ActorType.Registry, null);
         }
@@ -54,9 +56,22 @@ namespace ActorPlayground.POC
             return AddInternal<IRemoteActorProcess>(configuration);
         }
 
-        public IActorProcess Get(string id)
+        public ICanPost Get(string id)
         {
-            if (!_actors.ContainsKey(id)) throw new Exception("not exist");
+
+            if (!_actors.ContainsKey(id))
+            {
+                if (Uri.TryCreate(id, UriKind.Absolute, out var uriResult) &&
+                uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)
+                {
+                   return _remoteActorProxyProvider.Get(id);
+                }
+                else
+                {
+                    throw new Exception("not exist");
+                }
+            }
+
 
             return _actors[id];
         }

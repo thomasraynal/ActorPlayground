@@ -11,7 +11,7 @@ namespace ActorPlayground.POC
 
         public RemoteActorProcess(IActorProcessConfiguration configuration, IActorRegistry registry, ISupervisorStrategy supervisionStrategy, ISerializer serializer) : base(configuration, registry, supervisionStrategy)
         {
-            _remoteReaderEndpoint = new RemoteReaderEndpoint(this, serializer);
+            _remoteReaderEndpoint = new RemoteReaderEndpoint(this, serializer, registry);
         }
 
         public void Dispose()

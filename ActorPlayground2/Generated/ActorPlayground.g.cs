@@ -26,21 +26,18 @@ namespace ActorPlayground.Remote {
           string.Concat(
             "ChVBY3RvclBsYXlncm91bmQucHJvdG8iIgoDUGlkEg8KB0FkZHJlc3MYASAB",
             "KAkSCgoCSWQYAiABKAkiMwoMTWVzc2FnZUJhdGNoEiMKCWVudmVsb3BlcxgB",
-            "IAMoCzIQLk1lc3NhZ2VFbnZlbG9wZSJnCg9NZXNzYWdlRW52ZWxvcGUSFAoM",
-            "bWVzc2FnZV90eXBlGAEgASgJEhQKDG1lc3NhZ2VfZGF0YRgCIAEoDBISCgpp",
-            "c19jb21tYW5kGAMgASgIEhQKBnNlbmRlchgEIAEoCzIELlBpZCIGCgRVbml0",
-            "MlkKBldyaXRlchIsCgRTZW5kEhAuTWVzc2FnZUVudmVsb3BlGhAuTWVzc2Fn",
-            "ZUVudmVsb3BlIgASIQoERW1pdBIQLk1lc3NhZ2VFbnZlbG9wZRoFLlVuaXQi",
-            "ADJrCgZSZWFkZXISKQoMUmVjZWl2ZUV2ZW50EhAuTWVzc2FnZUVudmVsb3Bl",
-            "GgUuVW5pdCIAEjYKDlJlY2VpdmVDb21tYW5kEhAuTWVzc2FnZUVudmVsb3Bl",
-            "GhAuTWVzc2FnZUVudmVsb3BlIgBCGaoCFkFjdG9yUGxheWdyb3VuZC5SZW1v",
-            "dGViBnByb3RvMw=="));
+            "IAMoCzIQLk1lc3NhZ2VFbnZlbG9wZSJTCg9NZXNzYWdlRW52ZWxvcGUSFAoM",
+            "bWVzc2FnZV90eXBlGAEgASgJEhQKDG1lc3NhZ2VfZGF0YRgCIAEoDBIUCgZz",
+            "ZW5kZXIYBCABKAsyBC5QaWQiBgoEVW5pdDJcCglUcmFuc3BvcnQSLAoEU2Vu",
+            "ZBIQLk1lc3NhZ2VFbnZlbG9wZRoQLk1lc3NhZ2VFbnZlbG9wZSIAEiEKBEVt",
+            "aXQSEC5NZXNzYWdlRW52ZWxvcGUaBS5Vbml0IgBCGaoCFkFjdG9yUGxheWdy",
+            "b3VuZC5SZW1vdGViBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.Pid), global::ActorPlayground.Remote.Pid.Parser, new[]{ "Address", "Id" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageBatch), global::ActorPlayground.Remote.MessageBatch.Parser, new[]{ "Envelopes" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageEnvelope), global::ActorPlayground.Remote.MessageEnvelope.Parser, new[]{ "MessageType", "MessageData", "IsCommand", "Sender" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.MessageEnvelope), global::ActorPlayground.Remote.MessageEnvelope.Parser, new[]{ "MessageType", "MessageData", "Sender" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ActorPlayground.Remote.Unit), global::ActorPlayground.Remote.Unit.Parser, null, null, null, null)
           }));
     }
@@ -353,7 +350,6 @@ namespace ActorPlayground.Remote {
     public MessageEnvelope(MessageEnvelope other) : this() {
       messageType_ = other.messageType_;
       messageData_ = other.messageData_;
-      isCommand_ = other.isCommand_;
       sender_ = other.sender_ != null ? other.sender_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
@@ -385,17 +381,6 @@ namespace ActorPlayground.Remote {
       }
     }
 
-    /// <summary>Field number for the "is_command" field.</summary>
-    public const int IsCommandFieldNumber = 3;
-    private bool isCommand_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    public bool IsCommand {
-      get { return isCommand_; }
-      set {
-        isCommand_ = value;
-      }
-    }
-
     /// <summary>Field number for the "sender" field.</summary>
     public const int SenderFieldNumber = 4;
     private global::ActorPlayground.Remote.Pid sender_;
@@ -422,7 +407,6 @@ namespace ActorPlayground.Remote {
       }
       if (MessageType != other.MessageType) return false;
       if (MessageData != other.MessageData) return false;
-      if (IsCommand != other.IsCommand) return false;
       if (!object.Equals(Sender, other.Sender)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
@@ -432,7 +416,6 @@ namespace ActorPlayground.Remote {
       int hash = 1;
       if (MessageType.Length != 0) hash ^= MessageType.GetHashCode();
       if (MessageData.Length != 0) hash ^= MessageData.GetHashCode();
-      if (IsCommand != false) hash ^= IsCommand.GetHashCode();
       if (sender_ != null) hash ^= Sender.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
@@ -455,10 +438,6 @@ namespace ActorPlayground.Remote {
         output.WriteRawTag(18);
         output.WriteBytes(MessageData);
       }
-      if (IsCommand != false) {
-        output.WriteRawTag(24);
-        output.WriteBool(IsCommand);
-      }
       if (sender_ != null) {
         output.WriteRawTag(34);
         output.WriteMessage(Sender);
@@ -476,9 +455,6 @@ namespace ActorPlayground.Remote {
       }
       if (MessageData.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(MessageData);
-      }
-      if (IsCommand != false) {
-        size += 1 + 1;
       }
       if (sender_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(Sender);
@@ -499,9 +475,6 @@ namespace ActorPlayground.Remote {
       }
       if (other.MessageData.Length != 0) {
         MessageData = other.MessageData;
-      }
-      if (other.IsCommand != false) {
-        IsCommand = other.IsCommand;
       }
       if (other.sender_ != null) {
         if (sender_ == null) {
@@ -526,10 +499,6 @@ namespace ActorPlayground.Remote {
           }
           case 18: {
             MessageData = input.ReadBytes();
-            break;
-          }
-          case 24: {
-            IsCommand = input.ReadBool();
             break;
           }
           case 34: {

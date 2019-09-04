@@ -17,6 +17,7 @@ namespace ActorPlayground.POC
             For<IRoot>().Use<Root>();
             For<IActorProcess>().Use<ActorProcess>();
             For<IRemoteActorProcess>().Use<RemoteActorProcess>();
+            For<IRemoteActorProxyProvider>().Use<RemoteActorProxyProvider>();
         }
     }
 
@@ -49,9 +50,9 @@ namespace ActorPlayground.POC
         }
     }
 
-    public class HelloActor : IActor
+    public class HelloActorHandleEvent : IActor
     {
-        public HelloActor()
+        public HelloActorHandleEvent()
         {
         }
 
@@ -68,7 +69,7 @@ namespace ActorPlayground.POC
         }
     }
 
-    public class HelloActor2 : IActor
+    public class HelloActorHandleCommand : IActor
     {
         public Task Receive(IContext context)
         {
@@ -97,14 +98,14 @@ namespace ActorPlayground.POC
 
                 var world = Factory.Create<TestRegistry>();
 
-                IActor actorFactory() => new HelloActor();
+                IActor actorFactory() => new HelloActorHandleEvent();
                 var process = world.Spawn(actorFactory);
 
                 world.Emit(process.Configuration.Id.Value, new Hello(process.Configuration.Id.Value));
 
                 await Task.Delay(10);
 
-                var actor = process.Actor as HelloActor;
+                var actor = process.Actor as HelloActorHandleEvent;
 
                 Assert.IsNotNull(actor);
 
@@ -120,7 +121,7 @@ namespace ActorPlayground.POC
 
                 var world = Factory.Create<TestRegistry>();
 
-                IActor actor() => new HelloActor2();
+                IActor actor() => new HelloActorHandleCommand();
                 var process = world.Spawn(actor);
 
                 var result = await world.Send<Hello>(process.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));

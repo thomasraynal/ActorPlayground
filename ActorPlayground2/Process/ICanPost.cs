@@ -6,6 +6,7 @@ namespace ActorPlayground.POC
 {
     public interface ICanPost
     {
+        ActorId Id { get; }
         void Post(IMessage msg, ICanPost sender);
     }
 }

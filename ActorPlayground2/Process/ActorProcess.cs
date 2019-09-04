@@ -18,6 +18,7 @@ namespace ActorPlayground.POC
         public IReadOnlyList<IActorProcess> Children => _children;
         public IActor Actor { get; private set; }
         public IActorProcessConfiguration Configuration { get; private set; }
+        public ActorId Id => Configuration.Id;
 
         public ActorProcess(
             IActorProcessConfiguration configuration,

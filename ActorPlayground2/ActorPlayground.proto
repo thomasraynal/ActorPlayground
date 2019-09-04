@@ -19,12 +19,7 @@ message MessageEnvelope {
 
 message Unit {}
 
-service Writer {
+service Transport {
   rpc Send (MessageEnvelope) returns (MessageEnvelope) {}
   rpc Emit (MessageEnvelope) returns (Unit) {}
-}
-
-service Reader {
-  rpc ReceiveEvent (MessageEnvelope) returns (Unit) {}
-  rpc ReceiveCommand (MessageEnvelope) returns (MessageEnvelope) {}
 }

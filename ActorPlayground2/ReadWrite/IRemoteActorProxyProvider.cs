@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface IRemoteWriterProvider
+    public interface IRemoteActorProxyProvider
     {
-        IWriter Get(ActorId target, ICanPost sender);
+        ICanPost Get(string id);
     }
 }

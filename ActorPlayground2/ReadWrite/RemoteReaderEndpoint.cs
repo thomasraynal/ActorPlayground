@@ -8,12 +8,12 @@ namespace ActorPlayground.POC.Remote
     {
         private readonly Server _server;
 
-        public RemoteReaderEndpoint(IActorProcess process, ISerializer serializer)
+        public RemoteReaderEndpoint(IActorProcess process, ISerializer serializer, IActorRegistry registry)
         {
 
             _server = new Server
             {
-                Services = { Reader.BindService(new RemoteReaderService(process, serializer)) },
+                Services = { Transport.BindService(new RemoteReaderService(process, serializer, registry)) },
                 Ports = { new ServerPort(process.Configuration.Uri.Host, process.Configuration.Uri.Port, ServerCredentials.Insecure) }
             };
 

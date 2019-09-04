@@ -8,10 +8,9 @@ namespace ActorPlayground.POC
 {
     public interface IWriter
     {
-        void Emit(IMessage message);
-        void Emit(ICanPost target, IMessage message);
-        Task<T> Send<T>(ICanPost target, IMessage message);
-        Task<T> Send<T>(ICanPost target, IMessage message, CancellationToken cancellationToken);
-        Task<T> Send<T>(ICanPost target, IMessage message, TimeSpan timeout);
+        void Emit(IMessage message, ICanPost sender);
+        Task Send<T>(IMessage message, ICanPost sender);
+        Task Send<T>(IMessage message, ICanPost sender, CancellationToken cancellationToken);
+        Task Send<T>(IMessage message, ICanPost sender, TimeSpan timeout);
     }
 }

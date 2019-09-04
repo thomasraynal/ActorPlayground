@@ -7,7 +7,7 @@ namespace ActorPlayground.POC
     {
         IActorProcess Add(Func<IActor> actorFactory, ActorType type, ICanPost parent);
         IActorProcess Add(Func<IActor> actorFactory, string adress, ActorType type, ICanPost parent);
-        IActorProcess Get(string id);
+        ICanPost Get(string id);
         void Remove(string id);
     }
 }

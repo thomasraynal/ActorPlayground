@@ -11,5 +11,10 @@ namespace ActorPlayground.POC.Remote
         {
             return new ActorId(pid.Id, pid.Address, ActorType.Remote);
         }
+
+        public static Pid ToPid(this ActorId actorId)
+        {
+            return new Pid() { Address = actorId.Adress, Id = actorId.Value };
+        }
     }
 }
