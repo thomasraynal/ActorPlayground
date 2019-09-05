@@ -9,8 +9,8 @@ namespace ActorPlayground.POC
 {
     public interface ICandSend
     {
-        Task<T> Send<T>(string targetId, IEvent message) where T : IEvent;
-        Task<T> Send<T>(string targetId, IEvent message, CancellationToken cancellationToken) where T : IEvent;
-        Task<T> Send<T>(string targetId, IEvent message, TimeSpan timeout) where T : IEvent;
+        Task<T> Send<T>(string targetId, ICommand message) where T : ICommandResult;
+        Task<T> Send<T>(string targetId, ICommand message, CancellationToken cancellationToken) where T : ICommandResult;
+        Task<T> Send<T>(string targetId, ICommand message, TimeSpan timeout) where T : ICommandResult;
     }
 }

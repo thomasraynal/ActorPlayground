@@ -14,7 +14,7 @@ namespace ActorPlayground.POC
         private readonly ISupervisorStrategy _supervisionStrategy;
         private readonly IMailbox _mailbox;
         private readonly List<IActorProcess> _children;
-
+        private readonly CommandHandler _commandHandler;
         public IReadOnlyList<IActorProcess> Children => _children;
         public IActor Actor { get; private set; }
         public IActorProcessConfiguration Configuration { get; private set; }
@@ -28,9 +28,10 @@ namespace ActorPlayground.POC
             _registry = registry;
             _supervisionStrategy = supervisionStrategy;
             _mailbox = new BlockingCollectionMailbox(this, registry);
+            _children = new List<IActorProcess>();
+            _commandHandler = new CommandHandler(this, _registry);
 
             Configuration = configuration;
-            _children = new List<IActorProcess>();
 
         }
 
@@ -110,5 +111,27 @@ namespace ActorPlayground.POC
             process.Post(message, null);
         }
 
+        //refacto: default timeout
+        public Task<TCommandResult> Send<TCommandResult>(string targetId, ICommand message, TimeSpan timeout) where TCommandResult : ICommandResult
+        {
+            return _commandHandler.Send<TCommandResult>(targetId, message, timeout);
+        }
+
+        //refacto: default timeout
+        public Task<TCommandResult> Send<TCommandResult>(string targetId, ICommand message, CancellationToken cancellationToken) where TCommandResult : ICommandResult
+        {
+            return _commandHandler.Send<TCommandResult>(targetId, message, cancellationToken);
+        }
+
+        //refacto: default timeout
+        public Task<TCommandResult> Send<TCommandResult>(string targetId, ICommand message) where TCommandResult : ICommandResult
+        {
+            return _commandHandler.Send<TCommandResult>(targetId, message);
+        }
+
+        public void HandleCommandResult(ICommandResult message)
+        {
+            _commandHandler.HandleCommandResult(message);
+        }
     }
 }

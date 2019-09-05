@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
+    //todo : base class
     public class BlockingCollectionMailbox : IMailbox
     {
         private BlockingCollection<MessageContext> _messages;
@@ -56,6 +57,10 @@ namespace ActorPlayground.POC
                     {
                         _process.HandleSystemMessage(msg.Message);
                         continue;
+                    }
+                    else if (msg.Message is ICommandResult commandResult)
+                    {
+                        _process.HandleCommandResult(commandResult);
                     }
 
                     await _process.Actor.Receive(msg);

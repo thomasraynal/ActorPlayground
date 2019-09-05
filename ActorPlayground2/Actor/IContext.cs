@@ -10,6 +10,8 @@ namespace ActorPlayground.POC
 
         IEvent Message { get; }
 
+        ICanPost Sender { get; }
+
         IActorRegistry Registry { get; }
 
         void Respond(IEvent message);

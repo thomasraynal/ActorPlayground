@@ -39,7 +39,23 @@ namespace ActorPlayground.POC
 
         public bool IsSystemMessage => false;
 
+        public Guid CommandId { get; set; }
+
         public SayHello(string who)
+        {
+            Who = who;
+        }
+    }
+
+    public class DoSayHello : ICommandResult
+    {
+        public string Who { get; }
+
+        public bool IsSystemMessage => false;
+
+        public Guid CommandId { get; set; }
+
+        public DoSayHello(string who)
         {
             Who = who;
         }
@@ -88,8 +104,12 @@ namespace ActorPlayground.POC
             var msg = context.Message;
             if (msg is SayHello r)
             {
+                var response = new DoSayHello("ok")
+                {
+                    CommandId = r.CommandId
+                };
 
-                context.Respond(new SayHello("ok"));
+                context.Respond(response);
             }
 
             return Task.CompletedTask;
@@ -136,7 +156,7 @@ namespace ActorPlayground.POC
                 IActor actor() => new HelloActorHandleCommand();
                 var process = world.Spawn(actor);
 
-                var result = await world.Send<SayHello>(process.Configuration.Id.Value, new Hello("ProtoActor"), TimeSpan.FromSeconds(2));
+                var result = await world.Send<DoSayHello>(process.Configuration.Id.Value, new SayHello("ProtoActor"), TimeSpan.FromSeconds(2));
 
                 Assert.AreEqual("ok", result.Who);
 

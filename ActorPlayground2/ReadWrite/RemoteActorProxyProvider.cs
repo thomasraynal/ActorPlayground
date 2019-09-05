@@ -21,7 +21,6 @@ namespace ActorPlayground.POC
             return _proxyCache.GetOrAdd(id, (_) =>
             {
                 return new RemoteActorProcessProxy(new ActorId(id, id, ActorType.Remote), _serializer);
-
             });
         }
     }

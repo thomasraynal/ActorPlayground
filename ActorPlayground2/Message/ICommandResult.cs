@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface ICommand : IEvent
+    public interface ICommandResult : IEvent
     {
         Guid CommandId { get; set; }
     }

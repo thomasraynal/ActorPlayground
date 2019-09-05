@@ -14,7 +14,7 @@ namespace ActorPlayground.POC
         public Root(IActorRegistry registry, IRootRemoteConfiguration rootConfiguration)
         {
             _registry = registry;
-
+    
             if (string.IsNullOrEmpty(rootConfiguration.Adress))
             {
                 _process = _registry.Add(() => this, ActorType.Transient, null);
@@ -23,6 +23,7 @@ namespace ActorPlayground.POC
             {
                 _process = _registry.Add(() => this, rootConfiguration.Adress, ActorType.Remote, null);
             }
+
         }
 
         public IActorProcess Spawn(Func<IActor> actorFactory, string adress)
@@ -41,33 +42,20 @@ namespace ActorPlayground.POC
             process.Post(message, null);
         }
 
-        public Task<T> Send<T>(string targetId, IEvent message, TimeSpan timeout) where T : IEvent
+        public Task<TCommandResult> Send<TCommandResult>(string targetId, ICommand message, TimeSpan timeout) where TCommandResult : ICommandResult
         {
-            return SendInternal(targetId, message, new Future<T>(timeout));
+            return _process.Send<TCommandResult>(targetId, message, timeout);
         }
 
-        public Task<T> Send<T>(string targetId, IEvent message, CancellationToken cancellationToken) where T : IEvent
+        public Task<TCommandResult> Send<TCommandResult>(string targetId, ICommand message, CancellationToken cancellationToken) where TCommandResult : ICommandResult
         {
-            return SendInternal(targetId, message, new Future<T>(cancellationToken));
+            return _process.Send<TCommandResult>(targetId, message, cancellationToken);
         }
 
-        public Task<T> Send<T>(string targetId, IEvent message) where T : IEvent
+        //refacto: default timeout
+        public Task<TCommandResult> Send<TCommandResult>(string targetId, ICommand message) where TCommandResult : ICommandResult
         {
-            return SendInternal(targetId, message, new Future<T>());
-        }
-
-        private Task<T> SendInternal<T>(string targetId, IEvent message, Future<T> future) where T : IEvent
-        {
-            var targetProcess = _registry.Get(targetId);
-            var futureProcess = _registry.Add(() => future, ActorType.Future, null);
-
-            targetProcess.Post(message, futureProcess);
-
-            return future.UnderlyingTask.ContinueWith(task =>
-            {
-                _registry.Remove(futureProcess.Configuration.Id.Value);
-                return task.Result;
-            });
+            return _process.Send<TCommandResult>(targetId, message);
         }
 
         public void Dispose()
@@ -77,7 +65,7 @@ namespace ActorPlayground.POC
 
         public Task Receive(IMessageContext context)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }

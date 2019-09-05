@@ -106,9 +106,9 @@ namespace ActorPlayground.POC
             {
                 actor.Value.Stop();
 
-                if(actor.Value is IDisposable)
+                if(actor.Value is IDisposable disposable)
                 {
-                   ((IDisposable)actor.Value).Dispose();
+                    disposable.Dispose();
                 }
             }
 

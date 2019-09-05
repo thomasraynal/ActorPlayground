@@ -3,6 +3,7 @@ using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Core.Utils;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,13 +19,11 @@ namespace ActorPlayground.POC.Remote
 
         public RemoteWriterService(ICanPost remote, ISerializer serializer)
         {
-
-            _serializer = serializer;
-
             var uri = new Uri(remote.Id.Adress);
 
             _channel = new Channel($"{uri.Host}:{uri.Port}", ChannelCredentials.Insecure);
             _client = new Transport.TransportClient(_channel);
+            _serializer = serializer;
 
         }
 
@@ -43,30 +42,19 @@ namespace ActorPlayground.POC.Remote
             };
         }
 
-        public void Emit(IEvent message, ICanPost sender)
+        public void Write(IEvent message, ICanPost sender)
         {
             _client.Send(Serialize(message, sender));
         }
 
-        public Task Send<T>(IEvent message, ICanPost sender)
-        {
-            _client.Send(Serialize(message, sender));
-
-            return Task.CompletedTask;
-        }
-
-        public Task Send<T>(IEvent message, ICanPost sender, CancellationToken cancellationToken)
+        public void Write(ICommand message, ICanPost sender, CancellationToken cancellationToken)
         {
             _client.Send(Serialize(message, sender), cancellationToken: cancellationToken);
-
-            return Task.CompletedTask;
         }
 
-        public Task Send<T>(IEvent message, ICanPost sender, TimeSpan timeout)
+        public void Write(ICommand message, ICanPost sender, TimeSpan timeout)
         {
             _client.Send(Serialize(message, sender), deadline: DateTime.Now.Add(timeout));
-
-            return Task.CompletedTask;
         }
     }
 }

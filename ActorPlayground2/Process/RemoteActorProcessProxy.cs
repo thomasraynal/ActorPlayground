@@ -17,7 +17,7 @@ namespace ActorPlayground.POC
 
         public void Post(IEvent msg, ICanPost sender)
         {
-            _writer.Emit(msg, sender);
+            _writer.Write(msg, sender);
         }
     }
 }

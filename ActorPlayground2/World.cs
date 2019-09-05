@@ -7,6 +7,7 @@ namespace ActorPlayground.POC
 {
     public static class World
     {
+
         public static IRoot Create<TRegistry>() where TRegistry : Registry
         {
             var container = new Container((conf) => conf.AddRegistry(Activator.CreateInstance<TRegistry>()));

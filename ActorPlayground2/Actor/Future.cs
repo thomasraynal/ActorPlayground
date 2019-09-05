@@ -9,17 +9,20 @@ namespace ActorPlayground.POC
     public class Future<T> : IActor
     {
         private readonly TaskCompletionSource<T> _task;
+        private readonly IActorProcess _underlying;
 
-        public Future()
+        public Future(IActorProcess underlying)
         {
             _task = new TaskCompletionSource<T>();
+            _underlying = underlying;
 
             UnderlyingTask = _task.Task;
         }
 
-        public Future(TimeSpan timeout)
+        public Future(IActorProcess underlying, TimeSpan timeout)
         {
             _task = new TaskCompletionSource<T>();
+            _underlying = underlying;
 
             var cancel = new CancellationTokenSource(timeout);
 
@@ -28,9 +31,10 @@ namespace ActorPlayground.POC
             UnderlyingTask = _task.Task.ContinueWith(result => result.Result, cancel.Token);
         }
 
-        public Future(CancellationToken cancellationToken)
+        public Future(IActorProcess underlying, CancellationToken cancellationToken)
         {
             _task = new TaskCompletionSource<T>();
+            _underlying = underlying;
 
             UnderlyingTask = _task.Task.ContinueWith(result => result.Result, cancellationToken);
         }
@@ -40,6 +44,8 @@ namespace ActorPlayground.POC
         public Task Receive(IMessageContext context)
         {
             _task.TrySetResult((T)context.Message);
+
+            _underlying.Post(context.Message, context.Sender);
 
             return Task.CompletedTask;
         }

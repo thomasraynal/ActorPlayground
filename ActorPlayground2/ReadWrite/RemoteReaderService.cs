@@ -25,16 +25,6 @@ namespace ActorPlayground.POC.Remote
             _registry = registry;
         }
 
-        private MessageEnvelope Serialize(IEvent message, ICanPost sender)
-        {
-            return new MessageEnvelope()
-            {
-                MessageData = ByteString.FromStream(new MemoryStream(_serializer.Serialize(message))),
-                MessageType = message.GetType().ToString(),
-                Sender = sender?.Id.ToPid()
-            };
-        }
-
         private (IEvent message, ICanPost sender) Deserialize(MessageEnvelope envelope)
         {
             var message = _serializer.Deserialize(envelope.MessageData.ToByteArray(), Type.GetType(envelope.MessageType)) as IEvent;

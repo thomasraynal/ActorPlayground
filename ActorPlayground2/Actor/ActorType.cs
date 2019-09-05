@@ -8,8 +8,6 @@ namespace ActorPlayground.POC
     {
         None,
         Transient,
-        Remote,
-        Future,
-        Registry
+        Remote
     }
 }
