@@ -4,9 +4,8 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public interface IRoot : IActor, ICandSend, ICanEmit, IDisposable
+    public interface IRoot : ICanSpawn, ICandSend, ICanEmit, IDisposable
     {
-        IActorProcess Spawn(Func<IActor> actorFactory, string adress);
-        IActorProcess Spawn(Func<IActor> actorFactory);
+
     }
 }

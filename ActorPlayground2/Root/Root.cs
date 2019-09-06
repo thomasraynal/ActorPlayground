@@ -14,14 +14,14 @@ namespace ActorPlayground.POC
         public Root(IActorRegistry registry, IRootRemoteConfiguration rootConfiguration)
         {
             _registry = registry;
-    
+
             if (string.IsNullOrEmpty(rootConfiguration.Adress))
             {
-                _process = _registry.Add(() => this, ActorType.Transient, null);
+                _process = _registry.Add(rootConfiguration.ActorFactory, ActorType.Transient, null);
             }
             else
             {
-                _process = _registry.Add(() => this, rootConfiguration.Adress, ActorType.Remote, null);
+                _process = _registry.Add(rootConfiguration.ActorFactory, rootConfiguration.Adress, ActorType.Remote, null);
             }
 
         }
@@ -63,9 +63,5 @@ namespace ActorPlayground.POC
             _registry.Dispose();
         }
 
-        public Task Receive(IMessageContext context)
-        {
-            return Task.CompletedTask;
-        }
     }
 }

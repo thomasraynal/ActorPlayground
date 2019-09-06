@@ -9,8 +9,17 @@ namespace ActorPlayground.POC
         public RootRemoteConfiguration(string adress)
         {
             Adress = adress;
+            ActorFactory = () => new DefaultRootActor();
+        }
+
+        public RootRemoteConfiguration(string adress, Func<IActor> actorFactory)
+        {
+            Adress = adress;
+            ActorFactory = actorFactory;
         }
 
         public string Adress { get; }
+
+        public Func<IActor> ActorFactory { get; }
     }
 }

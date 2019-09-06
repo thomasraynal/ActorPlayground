@@ -4,7 +4,8 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    interface IDirectory : IActorProcess
+    public interface IClusterConfiguration
     {
+        string Name { get; }
     }
 }
