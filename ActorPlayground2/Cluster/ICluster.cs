@@ -7,5 +7,8 @@ namespace ActorPlayground.POC
 {
     public interface ICluster : ICanSpawn, ICandSend, ICanEmit, IDisposable
     {
+        IClusterConfiguration Configuration { get; }
+        void Join(ActorId actorId);
+        void Quit(ActorId actorId);
     }
 }

@@ -115,9 +115,6 @@ namespace ActorPlayground.POC.Tests
     public class TestLocal
     {
 
-        [TestFixture]
-        public class Tests
-        {
             [Test]
             public async Task ShouldEmitEvent()
             {
@@ -189,6 +186,30 @@ namespace ActorPlayground.POC.Tests
             }
 
             [Test]
+            public async Task ShouldSpawnNamedActor()
+            {
+                var world = World.Create<TestRegistry>();
+                var name = "MyActor";
+
+                IActor actorFactory() => new HelloActorHandleEvent();
+                var process = world.SpawnNamed(actorFactory, name);
+
+                Assert.AreEqual(name, process.Id.Value);
+
+                world.Emit(name, new Hello(name));
+
+                await Task.Delay(10);
+
+                var actor = process.Actor as HelloActorHandleEvent;
+
+                Assert.IsNotNull(actor);
+
+                Assert.AreEqual(1, actor.Received.Count);
+
+                world.Dispose();
+            }
+
+            [Test]
             public async Task ShouldSpawnChildActor()
             {
 
@@ -222,7 +243,6 @@ namespace ActorPlayground.POC.Tests
             }
 
         }
-    }
 
 }
 

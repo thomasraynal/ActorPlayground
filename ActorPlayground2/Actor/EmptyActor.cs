@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public class DefaultRootActor : IActor
+    public class EmptyActor : IActor
     {
+        public static EmptyActor Instance => new EmptyActor();
+
         public Task Receive(IMessageContext context)
         {
             return Task.CompletedTask;

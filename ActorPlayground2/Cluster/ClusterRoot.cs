@@ -8,14 +8,25 @@ namespace ActorPlayground.POC
 {
     public class ClusterRoot : Root, ICluster
     {
-        private IClusterConfiguration _configuration;
-        private IActorRegistry _registry;
 
-        public ClusterRoot(IClusterConfiguration configuration, IActorRegistry registry): base(registry, configuration)
+        private readonly IClusterRegistry _registry;
+
+        public ClusterRoot(IClusterConfiguration configuration, IClusterRegistry registry): base(registry, configuration)
         {
-            _configuration = configuration;
+            Configuration = configuration;
             _registry = registry;
         }
 
+        public IClusterConfiguration Configuration { get; }
+
+        public void Join(ActorId actorId)
+        {
+            _registry.Add(actorId);
+        }
+
+        public void Quit(ActorId actorId)
+        {
+            _registry.Remove(actorId);
+        }
     }
 }

@@ -60,6 +60,26 @@ namespace ActorPlayground.POC
             return AddInternal<IRemoteActorProcess>(configuration);
         }
 
+        public IActorProcess Add(Func<IActor> actorFactory, ICanPost parent, string name)
+        {
+            if (_actors.ContainsKey(name)) throw new Exception("already exist");
+
+            var id = NextId(name, null, ActorType.Remote);
+            var configuration = new ActorProcessConfiguration(id, actorFactory, parent, id.Type);
+
+            return AddInternal<IActorProcess>(configuration);
+        }
+
+        public IActorProcess Add(Func<IActor> actorFactory, string adress, ICanPost parent, string name)
+        {
+            if (_actors.ContainsKey(name)) throw new Exception("already exist");
+
+            var id = NextId(name, adress, ActorType.Remote);
+            var configuration = new ActorProcessConfiguration(id, actorFactory, parent, id.Type);
+
+            return AddInternal<IActorProcess>(configuration);
+        }
+
         public ICanPost Get(string id)
         {
 
@@ -82,15 +102,20 @@ namespace ActorPlayground.POC
         }
 
         //refacto: remove all children
-        public void Remove(string id)
+        public void Remove(ActorId id)
         {
-            if (!_actors.ContainsKey(id)) throw new Exception("not exist");
+            if (!_actors.ContainsKey(id.Value)) throw new Exception("not exist");
 
-            _actors.Remove(id, out var _);
+            _actors.Remove(id.Value, out var _);
 
         }
 
         //refacto : id provider
+        private ActorId NextId(string name, string adress, ActorType type)
+        {
+            return new ActorId(name, adress, type);
+        }
+
         private ActorId NextId(string adress, ActorType type)
         {
 
@@ -119,6 +144,7 @@ namespace ActorPlayground.POC
         {
             throw new NotImplementedException();
         }
+
 
     }
 }

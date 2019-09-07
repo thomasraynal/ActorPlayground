@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public interface IRoot : ICanSpawn, ICandSend, ICanEmit, IDisposable
+    public interface IRoot : IHasId, ICanSpawn, ICandSend, ICanEmit, IDisposable
     {
 
     }

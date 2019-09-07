@@ -16,5 +16,10 @@ namespace ActorPlayground.POC
             return container.GetInstance<ICluster>();
         }
 
+        public static void Join(string clusterDirectoryAdress, ActorId actorId)
+        {
+
+        }
+
     }
 }

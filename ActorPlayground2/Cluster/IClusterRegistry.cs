@@ -7,5 +7,6 @@ namespace ActorPlayground.POC
 {
     public interface IClusterRegistry : IActorRegistry
     {
+        IActorProcess Add(ActorId actorId);
     }
 }

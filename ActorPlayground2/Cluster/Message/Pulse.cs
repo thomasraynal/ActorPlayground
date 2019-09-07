@@ -6,11 +6,11 @@ namespace ActorPlayground.POC.Message
 {
     public class Pulse : IEvent
     {
-        public Pulse(string adress)
+        public Pulse(ActorId actorId)
         {
-            Adress = adress;
+            ActorId = actorId;
         }
 
-        string Adress { get; }
+        ActorId ActorId { get; }
     }
 }

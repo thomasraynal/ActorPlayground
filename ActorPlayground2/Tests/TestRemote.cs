@@ -16,7 +16,7 @@ namespace ActorPlayground.POC.Tests
 
             var world1 = World.Create<TestRegistry>();
             var process1 = world1.Spawn(actorFactory, "http://127.0.0.1:8080");
-
+            
             var world2 = World.Create<TestRegistry>();
             var process2 = world1.Spawn(actorFactory, "http://127.0.0.1:8181");
 

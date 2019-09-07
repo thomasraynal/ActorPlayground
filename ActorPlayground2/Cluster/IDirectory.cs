@@ -7,9 +7,9 @@ namespace ActorPlayground.POC
 {
     public interface IDirectory : IDisposable
     {
-        Task Pulse(string address);
+        Task Pulse(ActorId actorId);
         Task Register(IClusterMember member);
-        Task Unregister(string address);
+        Task Unregister(ActorId actorId);
         Task<IEnumerable<IClusterMember>> GetMembers();
     }
 }

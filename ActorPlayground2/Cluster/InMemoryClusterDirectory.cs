@@ -26,6 +26,7 @@ namespace ActorPlayground.POC
         private readonly Dictionary<string, ClusterMemberDescriptor> _world;
         private readonly IDirectoryConfiguration _configuration;
 
+
         public InMemoryClusterDirectory(IDirectoryConfiguration configuration)
         {
             _world = new Dictionary<string, ClusterMemberDescriptor>();
@@ -42,11 +43,15 @@ namespace ActorPlayground.POC
             return Task.FromResult(_world.Values.Select(v => v.ClusterMember));
         }
 
-        public Task Pulse(string adress)
+        public Task Pulse(ActorId actorId)
         {
-            if (_world.ContainsKey(adress))
+            if (_world.ContainsKey(actorId.Adress))
             {
-                _world[adress].LastPulse = DateTime.Now;
+                _world[actorId.Adress].LastPulse = DateTime.Now;
+            }
+            else
+            {
+
             }
 
             return Task.CompletedTask;
@@ -60,10 +65,15 @@ namespace ActorPlayground.POC
             return Task.CompletedTask;
         }
 
-        public Task Unregister(string address)
+        public Task Unregister(ActorId actorId)
         {
-            _world.Remove(address);
+            _world.Remove(actorId.Adress);
             return Task.CompletedTask;
+        }
+
+        private void Cleanup()
+        {
+         
         }
     }
 }

@@ -32,6 +32,33 @@ namespace ActorPlayground.POC
             return process;
         }
 
+        public IActorProcess Add(Func<IActor> actorFactory, ICanPost parent, string name)
+        {
+            var process = _registry.Add(actorFactory, null, parent, name);
+
+            _directory.Register(new ClusterMember(process.Id));
+
+            return process;
+        }
+
+        public IActorProcess Add(Func<IActor> actorFactory, string adress, ICanPost parent, string name)
+        {
+            var process = _registry.Add(actorFactory, adress, parent, name);
+
+            _directory.Register(new ClusterMember(process.Id));
+
+            return process;
+        }
+
+        public IActorProcess Add(ActorId actorId)
+        {
+            var process = _registry.Add(() => EmptyActor.Instance, actorId.Adress, null, actorId.Value);
+
+            _directory.Register(new ClusterMember(actorId));
+
+            return process;
+        }
+
         public void Dispose()
         {
             _registry.Dispose();
@@ -47,10 +74,11 @@ namespace ActorPlayground.POC
             return _registry.Receive(context);
         }
 
-        public void Remove(string id)
+        public void Remove(ActorId id)
         {
             _directory.Unregister(id);
             _registry.Remove(id);
         }
+
     }
 }

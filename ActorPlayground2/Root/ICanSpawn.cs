@@ -8,5 +8,8 @@ namespace ActorPlayground.POC
     {
         IActorProcess Spawn(Func<IActor> actorFactory, string adress);
         IActorProcess Spawn(Func<IActor> actorFactory);
+
+        IActorProcess SpawnNamed(Func<IActor> actorFactory, string adress, string name);
+        IActorProcess SpawnNamed(Func<IActor> actorFactory, string name);
     }
 }

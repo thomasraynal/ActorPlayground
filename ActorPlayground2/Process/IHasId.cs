@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ActorPlayground.POC
 {
-    public interface ICanPost : IHasId
+    public interface IHasId
     {
-        void Post(IEvent msg, ICanPost sender);
+        ActorId Id { get; }
     }
 }

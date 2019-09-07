@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
+    //refacto: implement ICanSpawn on IActorProcess and spawn from Root as child of Root
     public class Root : IRoot
     {
         private readonly IActorRegistry _registry;
         private readonly IActorProcess _process;
+
+        public ActorId Id => _process.Id;
 
         public Root(IActorRegistry registry, IRootRemoteConfiguration rootConfiguration)
         {
@@ -34,6 +37,16 @@ namespace ActorPlayground.POC
         public IActorProcess Spawn(Func<IActor> actorFactory)
         {
             return _registry.Add(actorFactory, null);
+        }
+
+        public IActorProcess SpawnNamed(Func<IActor> actorFactory, string adress, string name)
+        {
+            return _registry.Add(actorFactory, adress, null, name);
+        }
+
+        public IActorProcess SpawnNamed(Func<IActor> actorFactory, string name)
+        {
+            return _registry.Add(actorFactory, null, name);
         }
 
         public void Emit(string targetId, IEvent message)
