@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.POC
 {
-    public interface IDirectory : IActorProcess, IDisposable
+    public interface IDirectory : IDisposable
     {
-        Task Pulse(string adress);
-        Task Register(string clusterName, IClusterMember member);
-        Task UnRegister(string clusterName, IClusterMember member);
+        Task Pulse(string address);
+        Task Register(IClusterMember member);
+        Task Unregister(string address);
+        Task<IEnumerable<IClusterMember>> GetMembers();
     }
 }

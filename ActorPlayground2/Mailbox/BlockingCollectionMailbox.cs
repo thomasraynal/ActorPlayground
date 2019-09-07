@@ -53,9 +53,9 @@ namespace ActorPlayground.POC
             {
                 try
                 {
-                    if (msg.Message.IsSystemMessage)
+                    if (msg.Message is ISystemEvent systemEvent)
                     {
-                        _process.HandleSystemMessage(msg.Message);
+                        _process.HandleSystemMessage(systemEvent);
                         continue;
                     }
                     else if (msg.Message is ICommandResult commandResult)

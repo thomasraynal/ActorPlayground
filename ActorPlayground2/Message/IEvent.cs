@@ -6,6 +6,5 @@ namespace ActorPlayground.POC
 {
     public interface IEvent
     {
-        bool IsSystemMessage { get; }
     }
 }

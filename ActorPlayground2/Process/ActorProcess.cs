@@ -37,7 +37,7 @@ namespace ActorPlayground.POC
 
         public IActorProcess SpawnChild(Func<IActor> actorFactory)
         {
-            var child = _registry.Add(actorFactory, ActorType.Transient, Configuration.Parent);
+            var child = _registry.Add(actorFactory, Configuration.Parent);
 
             _children.Add(child);
 

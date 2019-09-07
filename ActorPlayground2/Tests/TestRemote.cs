@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ActorPlayground.POC
+namespace ActorPlayground.POC.Tests
 {
     [TestFixture]
     public class TestRemote

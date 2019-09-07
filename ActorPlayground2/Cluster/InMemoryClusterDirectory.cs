@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,18 +21,25 @@ namespace ActorPlayground.POC
 
     }
 
-    public class InMemoryClusterDirectory : ActorProcess, IDirectory
+    public class InMemoryClusterDirectory : IDirectory
     {
         private readonly Dictionary<string, ClusterMemberDescriptor> _world;
+        private readonly IDirectoryConfiguration _configuration;
 
-        public InMemoryClusterDirectory(IActorProcessConfiguration configuration, IActorRegistry registry, ISupervisorStrategy supervisionStrategy) : base(configuration, registry, supervisionStrategy)
+        public InMemoryClusterDirectory(IDirectoryConfiguration configuration)
         {
             _world = new Dictionary<string, ClusterMemberDescriptor>();
+            _configuration = configuration;
         }
 
         public void Dispose()
         {
             _world.Clear();
+        }
+
+        public Task<IEnumerable<IClusterMember>> GetMembers()
+        {
+            return Task.FromResult(_world.Values.Select(v => v.ClusterMember));
         }
 
         public Task Pulse(string adress)
@@ -47,12 +55,15 @@ namespace ActorPlayground.POC
 
         public Task Register(IClusterMember member)
         {
-            throw new NotImplementedException();
+            _world[member.ActorId.Adress] = new ClusterMemberDescriptor(member, _configuration.MemberTtl);
+
+            return Task.CompletedTask;
         }
 
-        public Task UnRegister(IClusterMember member)
+        public Task Unregister(string address)
         {
-            throw new NotImplementedException();
+            _world.Remove(address);
+            return Task.CompletedTask;
         }
     }
 }

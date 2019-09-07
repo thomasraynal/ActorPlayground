@@ -4,14 +4,13 @@ using System.Text;
 
 namespace ActorPlayground.POC.Message
 {
-    public class Stop : ISystemEvent
+    public class Pulse : IEvent
     {
-        public Stop(string who)
+        public Pulse(string adress)
         {
-            Who = who;
+            Adress = adress;
         }
 
-        public string Who { get; }
-
+        string Adress { get; }
     }
 }

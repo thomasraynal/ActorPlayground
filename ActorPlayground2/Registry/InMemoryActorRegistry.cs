@@ -44,18 +44,18 @@ namespace ActorPlayground.POC
             return process;
         }
 
-        public IActorProcess Add(Func<IActor> actorFactory, ActorType type, ICanPost parent)
+        public IActorProcess Add(Func<IActor> actorFactory, ICanPost parent)
         {
-            var id = NextId(null, type);
-            var configuration = new ActorProcessConfiguration(id, actorFactory, parent, type);
+            var id = NextId(null, ActorType.Transient);
+            var configuration = new ActorProcessConfiguration(id, actorFactory, parent, id.Type);
 
             return AddInternal<IActorProcess>(configuration);
         }
 
-        public IActorProcess Add(Func<IActor> actorFactory, string adress, ActorType type, ICanPost parent)
+        public IActorProcess Add(Func<IActor> actorFactory, string adress, ICanPost parent)
         {
-            var id = NextId(adress, type);
-            var configuration = new ActorProcessConfiguration(id, actorFactory, parent, type, new Uri(adress));
+            var id = NextId(adress, ActorType.Remote);
+            var configuration = new ActorProcessConfiguration(id, actorFactory, parent, id.Type, new Uri(adress));
 
             return AddInternal<IRemoteActorProcess>(configuration);
         }

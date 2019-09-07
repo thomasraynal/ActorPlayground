@@ -13,6 +13,5 @@ namespace ActorPlayground.POC.Message
 
         public string Who { get; }
 
-        public bool IsSystemMessage => true;
     }
 }

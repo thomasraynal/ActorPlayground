@@ -17,23 +17,23 @@ namespace ActorPlayground.POC
 
             if (string.IsNullOrEmpty(rootConfiguration.Adress))
             {
-                _process = _registry.Add(rootConfiguration.ActorFactory, ActorType.Transient, null);
+                _process = _registry.Add(rootConfiguration.ActorFactory, null);
             }
             else
             {
-                _process = _registry.Add(rootConfiguration.ActorFactory, rootConfiguration.Adress, ActorType.Remote, null);
+                _process = _registry.Add(rootConfiguration.ActorFactory, rootConfiguration.Adress,  null);
             }
 
         }
 
         public IActorProcess Spawn(Func<IActor> actorFactory, string adress)
         {
-            return _registry.Add(actorFactory, adress, ActorType.Remote, null);
+            return _registry.Add(actorFactory, adress, null);
         }
 
         public IActorProcess Spawn(Func<IActor> actorFactory)
         {
-            return _registry.Add(actorFactory, ActorType.Transient, null);
+            return _registry.Add(actorFactory, null);
         }
 
         public void Emit(string targetId, IEvent message)

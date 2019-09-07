@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ActorPlayground.POC
+namespace ActorPlayground.POC.Tests
 {
     public class TestRegistry : Registry
     {
@@ -25,8 +25,6 @@ namespace ActorPlayground.POC
     {
         public string Who { get; }
 
-        public bool IsSystemMessage => false;
-
         public Hello(string who)
         {
             Who = who;
@@ -36,8 +34,6 @@ namespace ActorPlayground.POC
     public class SayHello : ICommand
     {
         public string Who { get; }
-
-        public bool IsSystemMessage => false;
 
         public Guid CommandId { get; set; }
 
@@ -50,8 +46,6 @@ namespace ActorPlayground.POC
     public class DoSayHello : ICommandResult
     {
         public string Who { get; }
-
-        public bool IsSystemMessage => false;
 
         public Guid CommandId { get; set; }
 
