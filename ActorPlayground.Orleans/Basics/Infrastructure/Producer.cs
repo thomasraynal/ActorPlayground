@@ -1,4 +1,5 @@
 ﻿using Orleans;
+using Orleans.Providers;
 using Orleans.Streams;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
+    [StorageProvider(ProviderName = "CcyPairStorage")]
     public abstract class Producer<TEvent> : Grain, ICanConnect where TEvent : IHasStreamId
     {
 
@@ -26,8 +28,16 @@ namespace ActorPlayground.Orleans.Basics
             return Task.CompletedTask;
         }
 
+        public Task Disconnect()
+        {
+            _provider = string.Empty;
+            return Task.CompletedTask;
+        }
+
         public async Task Next(TEvent @event)
         {
+            if (_provider == string.Empty) throw new Exception("disocnnected");
+
             if (!_streams.ContainsKey(@event.StreamId))
             {
                 var streamProvider = base.GetStreamProvider(_provider);

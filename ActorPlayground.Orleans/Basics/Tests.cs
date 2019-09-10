@@ -26,6 +26,7 @@ namespace ActorPlayground.Orleans.Basics
             var builder = new SiloHostBuilder()
                                 .AddMemoryStreams<DefaultMemoryMessageBodySerializer>("CcyPairStream")
                                 .AddMemoryGrainStorage("CcyPairStorage")
+                                .AddMemoryGrainStorage("AsyncStreamHandlerStorage")
                                 .AddMemoryGrainStorage("PubSubStore")
                                 .UseLocalhostClustering()
                                 .Configure<ClusterOptions>(options =>
@@ -66,19 +67,14 @@ namespace ActorPlayground.Orleans.Basics
             var cancel = new CancellationTokenSource();
 
             var silo = await CreateSilo(cancel.Token);
-
             var client = await GetClient();
 
             var eurodol = client.GetGrain<ICcyPairGrain>("EUR/USD");
-
             var isActive = await eurodol.GetIsActive();
-
             Assert.IsFalse(isActive);
 
             await eurodol.Activate();
-
             isActive = await eurodol.GetIsActive();
-
             Assert.IsTrue(isActive);
 
             cancel.Cancel();
@@ -86,47 +82,71 @@ namespace ActorPlayground.Orleans.Basics
             client.Dispose();
         }
 
+        [Test]
+        public async Task ShouldDesactivateAndReactivateSubscription()
+        {
+            var cancel = new CancellationTokenSource();
+            var silo = await CreateSilo(cancel.Token);
+            var client = await GetClient();
+
+            var fxConnect = client.GetGrain<IMarketGrain>("FxConnect");
+            await fxConnect.Connect("CcyPairStream");
+
+            var traderId = Guid.NewGuid();
+            var trader = client.GetGrain<IFxFeedGrain<CcyPairChanged>>(traderId);
+            await trader.Connect("CcyPairStream");
+            await trader.Subscribe("EUR/USD");
+
+            await fxConnect.Tick("EUR/USD", 1.32, 1.34);
+            await Task.Delay(200);
+            var consumedEvents = await trader.GetConsumedEvents();
+            Assert.AreEqual(1, consumedEvents.Count());
+
+            await trader.Desactivate();
+
+            await fxConnect.Tick("EUR/USD", 1.32, 1.34);
+            await Task.Delay(200);
+            consumedEvents = await trader.GetConsumedEvents();
+            Assert.AreEqual(0, consumedEvents.Count());
+
+            await fxConnect.Tick("EUR/USD", 1.32, 1.34);
+            await Task.Delay(200);
+            consumedEvents = await trader.GetConsumedEvents();
+            Assert.AreEqual(1, consumedEvents.Count());
+
+            cancel.Cancel();
+            await silo.StopAsync();
+            client.Dispose();
+        }
 
         [Test]
         public async Task ShouldStreamCcyPair()
         {
             var cancel = new CancellationTokenSource();
-
             var silo = await CreateSilo(cancel.Token);
-
             var client = await GetClient();
 
             var fxConnect = client.GetGrain<IMarketGrain>("FxConnect");
-            var trader1 = client.GetGrain<ITraderGrain<CcyPairChanged>>(Guid.NewGuid());
-
             await fxConnect.Connect("CcyPairStream");
 
-            await trader1.Subscribe("EUR/USD", "CcyPairStream");
+            var trader1 = client.GetGrain<IFxFeedGrain<CcyPairChanged>>(Guid.NewGuid());
+            await trader1.Connect("CcyPairStream");
+            await trader1.Subscribe("EUR/USD");
 
-            await fxConnect.OnTick("EUR/USD", 1.32, 1.34);
-
+            await fxConnect.Tick("EUR/USD", 1.32, 1.34);
             await Task.Delay(200);
-
             var consumedEvents = await trader1.GetConsumedEvents();
-
             Assert.AreEqual(1, consumedEvents.Count());
 
-            await fxConnect.OnTick("EUR/CAD", 1.32, 1.34);
-
+            await fxConnect.Tick("EUR/CAD", 1.32, 1.34);
             await Task.Delay(200);
-
             consumedEvents = await trader1.GetConsumedEvents();
-
             Assert.AreEqual(1, consumedEvents.Count());
 
-            await trader1.Subscribe("EUR/CAD", "CcyPairStream");
-
-            await fxConnect.OnTick("EUR/CAD", 1.32, 1.34);
-
+            await trader1.Subscribe("EUR/CAD");
+            await fxConnect.Tick("EUR/CAD", 1.32, 1.34);
             await Task.Delay(200);
-
             consumedEvents = await trader1.GetConsumedEvents();
-
             Assert.AreEqual(2, consumedEvents.Count());
 
             cancel.Cancel();

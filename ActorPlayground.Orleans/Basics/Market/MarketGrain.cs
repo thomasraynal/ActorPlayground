@@ -7,9 +7,9 @@ namespace ActorPlayground.Orleans.Basics
 {
     public class MarketGrain : Producer<CcyPairChanged>, IMarketGrain
     {
-        public Task OnTick(string id, double bid, double ask)
+        public Task Tick(string ccyPair, double bid, double ask)
         {
-            return Next(new CcyPairChanged(id, true, ask, bid));
+            return Next(new CcyPairChanged(ccyPair, true, ask, bid));
         }
     }
 }

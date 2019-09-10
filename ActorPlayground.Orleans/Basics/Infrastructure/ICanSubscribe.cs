@@ -8,6 +8,7 @@ namespace ActorPlayground.Orleans.Basics
 {
     public interface ICanSubscribe<TEvent> where TEvent : IHasStreamId
     {
-        Task Subscribe(string subject, string provider);
+        Task Subscribe(string subject);
+        Task Unsubscribe(string subject);
     }
 }

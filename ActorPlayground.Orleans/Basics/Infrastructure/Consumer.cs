@@ -2,59 +2,89 @@
 using Orleans.Streams;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public abstract class Consumer<TEvent> : Grain, ICanSubscribe<TEvent> where TEvent : IHasStreamId
+    //todo: overload AsyncStreamHolderState
+    public abstract class Consumer<TEvent> : Grain<AsyncStreamHolderState<TEvent>>, IAsyncObserver<TEvent>, ICanConnect, ICanSubscribe<TEvent> where TEvent : IHasStreamId
     {
-        private IAsyncStream<TEvent> _consumer;
 
-        public abstract Task OnNext(TEvent @event);
+        public async Task Connect(string provider)
+        {
+       
+            await Disconnect();
 
-        public Task OnError(Exception exception)
+            State.Provider = provider;
+
+            await base.WriteStateAsync();
+
+        }
+
+        public abstract Task OnNextAsync(TEvent @event, StreamSequenceToken token);
+
+        public virtual Task OnErrorAsync(Exception exception)
         {
             return Task.CompletedTask;
         }
 
-        public Task OnCompleted()
+        public virtual Task OnCompletedAsync()
         {
             return Task.CompletedTask;
+        }
+
+        public async Task Disconnect()
+        {
+            foreach (var subject in State.StreamHandles.Keys)
+            {
+                await State.StreamHandles[subject].UnsubscribeAsync();
+            }
+
+            State.StreamHandles.Clear();
         }
 
         public async override Task OnActivateAsync()
         {
-            if(null != _consumer)
+            foreach (var subject in State.StreamHandles.Keys.ToList())
             {
-                foreach(var handle in await _consumer.GetAllSubscriptionHandles())
-                {
-                   await handle.ResumeAsync((data, token) =>
-                    {
-                        OnNext(data);
-                        return Task.CompletedTask;
+                //bug? ResumeAsync does not work
+                //State.StreamHandles[subject] = await State.StreamHandles[subject].ResumeAsync(this);
 
-                    }, OnError, OnCompleted);
-                }
+                await State.StreamHandles[subject].UnsubscribeAsync();
+
+                var streamProvider = base.GetStreamProvider(State.Provider);
+                var consumer = streamProvider.GetStream<TEvent>(Guid.Empty, subject);
+                State.StreamHandles[subject] = await consumer.SubscribeAsync(this);
+
+                await base.WriteStateAsync();
+
             }
-
-            await base.OnActivateAsync();
         }
 
-        public async Task Subscribe(string subject, string provider)
+        public async Task Unsubscribe(string subject)
         {
-            var streamProvider = GetStreamProvider(provider);
+            await State.StreamHandles[subject].UnsubscribeAsync();
 
-            _consumer = streamProvider.GetStream<TEvent>(Guid.Empty, subject);
+            State.StreamHandles.Remove(subject);
 
-            await _consumer.SubscribeAsync((data, token) =>
-             {
-                 OnNext(data);
-                 return Task.CompletedTask;
+            await base.WriteStateAsync();
 
-             }, OnError, OnCompleted);
+        }
 
+        public async Task Subscribe(string subject)
+        {
+            if (!State.StreamHandles.ContainsKey(subject))
+            {
+                var streamProvider = base.GetStreamProvider(State.Provider);
+                var consumer = streamProvider.GetStream<TEvent>(Guid.Empty, subject);
+
+                State.StreamHandles[subject] = await consumer.SubscribeAsync(this);
+
+                await base.WriteStateAsync();
+            }
         }
     }
 }

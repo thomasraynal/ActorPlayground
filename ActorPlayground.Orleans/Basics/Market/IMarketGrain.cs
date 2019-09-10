@@ -8,6 +8,6 @@ namespace ActorPlayground.Orleans.Basics
 {
     public interface IMarketGrain : IGrainWithStringKey, ICanConnect
     {
-        Task OnTick(string id, double bid, double ask);
+        Task Tick(string ccyPair, double bid, double ask);
     }
 }

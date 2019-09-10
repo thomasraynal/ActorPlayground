@@ -8,5 +8,6 @@ namespace ActorPlayground.Orleans.Basics
     public interface ICanConnect
     {
         Task Connect(string provider);
+        Task Disconnect();
     }
 }
