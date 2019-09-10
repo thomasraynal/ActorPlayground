@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public interface ICanConnect
+    public interface IConsumer<TEvent> :  ICanObserve<TEvent> where TEvent : IHasStreamId
     {
-        Task Connect(string provider);
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public interface ITraderGrain : IGrainWithGuidKey, ICanConnect
+    public interface ITraderGrain<TEvent> : IGrainWithGuidKey, ICanSubscribe<TEvent> where TEvent : IHasStreamId
     {
         Task<IEnumerable<CcyPairChanged>> GetConsumedEvents();
     }

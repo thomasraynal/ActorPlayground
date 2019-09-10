@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Orleans.Providers;
 using System.Linq;
+using Orleans.Streams;
 
 namespace ActorPlayground.Orleans.Basics
 {
@@ -19,7 +20,7 @@ namespace ActorPlayground.Orleans.Basics
     {
         private const string serviceId = "OrleansCcyPairs";
 
-        private async Task CreateSilo(CancellationToken cancel)
+        private async Task<ISiloHost> CreateSilo(CancellationToken cancel)
         {
 
             var builder = new SiloHostBuilder()
@@ -37,6 +38,8 @@ namespace ActorPlayground.Orleans.Basics
 
             var host = builder.Build();
             await host.StartAsync(cancel);
+
+            return host;
 
         }
 
@@ -62,7 +65,7 @@ namespace ActorPlayground.Orleans.Basics
         {
             var cancel = new CancellationTokenSource();
 
-           await CreateSilo(cancel.Token);
+            var silo = await CreateSilo(cancel.Token);
 
             var client = await GetClient();
 
@@ -79,6 +82,7 @@ namespace ActorPlayground.Orleans.Basics
             Assert.IsTrue(isActive);
 
             cancel.Cancel();
+            await silo.StopAsync();
             client.Dispose();
         }
 
@@ -88,16 +92,16 @@ namespace ActorPlayground.Orleans.Basics
         {
             var cancel = new CancellationTokenSource();
 
-            await CreateSilo(cancel.Token);
+            var silo = await CreateSilo(cancel.Token);
 
             var client = await GetClient();
 
             var fxConnect = client.GetGrain<IMarketGrain>("FxConnect");
-            var trader1 = client.GetGrain<ITraderGrain>(Guid.NewGuid());
+            var trader1 = client.GetGrain<ITraderGrain<CcyPairChanged>>(Guid.NewGuid());
 
-            await fxConnect.Connect( "EUR/USD", "CcyPairStream");
+            await fxConnect.Connect("CcyPairStream");
 
-            await trader1.Connect("EUR/USD", "CcyPairStream");
+            await trader1.Subscribe("EUR/USD", "CcyPairStream");
 
             await fxConnect.OnTick("EUR/USD", 1.32, 1.34);
 
@@ -107,7 +111,30 @@ namespace ActorPlayground.Orleans.Basics
 
             Assert.AreEqual(1, consumedEvents.Count());
 
+            await fxConnect.OnTick("EUR/CAD", 1.32, 1.34);
+
+            await Task.Delay(200);
+
+            consumedEvents = await trader1.GetConsumedEvents();
+
+            Assert.AreEqual(1, consumedEvents.Count());
+
+            await trader1.Subscribe("EUR/CAD", "CcyPairStream");
+
+            await fxConnect.OnTick("EUR/CAD", 1.32, 1.34);
+
+            await Task.Delay(200);
+
+            consumedEvents = await trader1.GetConsumedEvents();
+
+            Assert.AreEqual(2, consumedEvents.Count());
+
+            cancel.Cancel();
+            await silo.StopAsync();
+            client.Dispose();
+
         }
+
 
     }
 }

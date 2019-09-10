@@ -8,25 +8,53 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public abstract class Consumer<TEvent> : Grain, IAsyncObserver<TEvent>
+    public abstract class Consumer<TEvent> : Grain, ICanSubscribe<TEvent> where TEvent : IHasStreamId
     {
         private IAsyncStream<TEvent> _consumer;
-        private StreamSubscriptionHandle<TEvent> _handle;
 
-        public async Task Connect(string streamNamespace, string providerToUse)
+        public abstract Task OnNext(TEvent @event);
+
+        public Task OnError(Exception exception)
         {
-            var streamProvider = base.GetStreamProvider(providerToUse);
-            _consumer = streamProvider.GetStream<TEvent>(Guid.Empty, streamNamespace);
-            _handle = await _consumer.SubscribeAsync(this);
-
+            return Task.CompletedTask;
         }
 
-        public abstract Task OnCompletedAsync();
+        public Task OnCompleted()
+        {
+            return Task.CompletedTask;
+        }
 
-        public abstract Task OnErrorAsync(Exception ex);
+        public async override Task OnActivateAsync()
+        {
+            if(null != _consumer)
+            {
+                foreach(var handle in await _consumer.GetAllSubscriptionHandles())
+                {
+                   await handle.ResumeAsync((data, token) =>
+                    {
+                        OnNext(data);
+                        return Task.CompletedTask;
 
-        public abstract Task OnNextAsync(TEvent item, StreamSequenceToken token = null);
+                    }, OnError, OnCompleted);
+                }
+            }
 
- 
+            await base.OnActivateAsync();
+        }
+
+        public async Task Subscribe(string subject, string provider)
+        {
+            var streamProvider = GetStreamProvider(provider);
+
+            _consumer = streamProvider.GetStream<TEvent>(Guid.Empty, subject);
+
+            await _consumer.SubscribeAsync((data, token) =>
+             {
+                 OnNext(data);
+                 return Task.CompletedTask;
+
+             }, OnError, OnCompleted);
+
+        }
     }
 }

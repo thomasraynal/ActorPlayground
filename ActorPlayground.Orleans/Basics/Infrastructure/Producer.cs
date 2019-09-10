@@ -7,31 +7,37 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public abstract class Producer<TEvent> : Grain, IObserverGrain<TEvent>, ICanConnect
+    public abstract class Producer<TEvent> : Grain, ICanConnect where TEvent : IHasStreamId
     {
-        private IAsyncStream<TEvent> _producer;
 
-        public Task Connect(string streamNamespace, string providerToUse)
+        private Dictionary<string, IAsyncStream<TEvent>> _streams;
+        private string _provider;
+
+        public async override Task OnActivateAsync()
         {
-            var streamProvider = base.GetStreamProvider(providerToUse);
-            _producer = streamProvider.GetStream<TEvent>(Guid.Empty, streamNamespace);
+            _streams = new Dictionary<string, IAsyncStream<TEvent>>();
 
+            await base.OnActivateAsync();
+        }
+
+        public Task Connect(string provider)
+        {
+            _provider = provider;
             return Task.CompletedTask;
         }
 
-        public async Task OnCompleted()
+        public async Task Next(TEvent @event)
         {
-            await _producer.OnCompletedAsync();
+            if (!_streams.ContainsKey(@event.StreamId))
+            {
+                var streamProvider = base.GetStreamProvider(_provider);
+                var producer = streamProvider.GetStream<TEvent>(Guid.Empty, @event.StreamId);
+                _streams[@event.StreamId] = producer;
+            }
+
+            await _streams[@event.StreamId].OnNextAsync(@event);
+
         }
 
-        public async Task OnError(Exception error)
-        {
-            await _producer.OnErrorAsync(error);
-        }
-
-        public async Task OnNext(TEvent @event)
-        {
-           await _producer.OnNextAsync(@event);
-        }
     }
 }

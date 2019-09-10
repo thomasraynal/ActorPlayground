@@ -4,18 +4,18 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public class CcyPairChanged : ICcyPair
+    public class CcyPairChanged : ICcyPair, IHasStreamId
     {
         public CcyPairChanged(string id, bool isActive, double ask, double bid)
         {
             IsActive = isActive;
-            Id = id;
+            StreamId = id;
             Ask = ask;
             Bid = bid;
             Date = DateTime.Now;
         }
 
-        public string Id { get; }
+        public string StreamId { get;  }
 
         public bool IsActive { get; }
 
@@ -24,5 +24,6 @@ namespace ActorPlayground.Orleans.Basics
         public double Bid { get; }
 
         public DateTime Date { get; }
+
     }
 }

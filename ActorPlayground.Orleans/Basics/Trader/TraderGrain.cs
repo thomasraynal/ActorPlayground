@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace ActorPlayground.Orleans.Basics
 {
 
-    public class TraderGrain : Consumer<CcyPairChanged>, ITraderGrain
+    public class TraderGrain : Consumer<CcyPairChanged>, ITraderGrain<CcyPairChanged>
     {
         public List<CcyPairChanged> _consumedEvents;
 
@@ -23,21 +23,12 @@ namespace ActorPlayground.Orleans.Basics
             return Task.FromResult(_consumedEvents.AsEnumerable());
         }
 
-        public override Task OnCompletedAsync()
+        public override Task OnNext(CcyPairChanged @event)
         {
-            return Task.CompletedTask;
-        }
-
-        public override Task OnErrorAsync(Exception ex)
-        {
-            return Task.CompletedTask;
-        }
-
-        public override Task OnNextAsync(CcyPairChanged item, StreamSequenceToken token = null)
-        {
-            _consumedEvents.Add(item);
+            _consumedEvents.Add(@event);
 
             return Task.CompletedTask;
         }
+
     }
 }

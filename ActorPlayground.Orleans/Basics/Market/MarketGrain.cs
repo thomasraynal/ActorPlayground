@@ -9,7 +9,7 @@ namespace ActorPlayground.Orleans.Basics
     {
         public Task OnTick(string id, double bid, double ask)
         {
-            return OnNext(new CcyPairChanged(id, true, ask, bid));
+            return Next(new CcyPairChanged(id, true, ask, bid));
         }
     }
 }
