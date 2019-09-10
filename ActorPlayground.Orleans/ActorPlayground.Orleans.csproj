@@ -20,6 +20,11 @@
     <PackageReference Include="Microsoft.Orleans.Server" Version="2.4.2" />
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
+    <PackageReference Include="System.Reactive" Version="4.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Basics\CcyPair\Model\" />
   </ItemGroup>
 
 </Project>

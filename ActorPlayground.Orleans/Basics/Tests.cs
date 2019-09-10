@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Orleans.Providers;
+using System.Linq;
 
 namespace ActorPlayground.Orleans.Basics
 {
@@ -17,29 +19,25 @@ namespace ActorPlayground.Orleans.Basics
     {
         private const string serviceId = "OrleansCcyPairs";
 
-        private void CreateSilo(CancellationToken cancel)
+        private async Task CreateSilo(CancellationToken cancel)
         {
-            Task.Run(async () =>
-            {
 
-                var builder = new SiloHostBuilder()
-                                    .AddMemoryGrainStorage("CcyPairStorage")
-                                    .UseLocalhostClustering()
-                                    .Configure<ClusterOptions>(options =>
-                                    {
-                                        options.ClusterId = "dev";
-                                        options.ServiceId = serviceId;
-                                    })
-                                    .ConfigureApplicationParts(parts => parts.AddApplicationPart(Assembly.GetExecutingAssembly()).WithReferences())
-                                    .ConfigureLogging(logging => logging.AddConsole());
+            var builder = new SiloHostBuilder()
+                                .AddMemoryStreams<DefaultMemoryMessageBodySerializer>("CcyPairStream")
+                                .AddMemoryGrainStorage("CcyPairStorage")
+                                .AddMemoryGrainStorage("PubSubStore")
+                                .UseLocalhostClustering()
+                                .Configure<ClusterOptions>(options =>
+                                {
+                                    options.ClusterId = "dev";
+                                    options.ServiceId = serviceId;
+                                })
+                                .ConfigureApplicationParts(parts => parts.AddApplicationPart(Assembly.GetExecutingAssembly()).WithReferences())
+                                .ConfigureLogging(logging => logging.AddConsole());
 
-                var host = builder.Build();
-                await host.StartAsync(cancel);
+            var host = builder.Build();
+            await host.StartAsync(cancel);
 
-                Console.ReadLine();
-
-
-            }, cancel);
         }
 
         private async Task<IClusterClient> GetClient()
@@ -64,7 +62,7 @@ namespace ActorPlayground.Orleans.Basics
         {
             var cancel = new CancellationTokenSource();
 
-            CreateSilo(cancel.Token);
+           await CreateSilo(cancel.Token);
 
             var client = await GetClient();
 
@@ -83,5 +81,33 @@ namespace ActorPlayground.Orleans.Basics
             cancel.Cancel();
             client.Dispose();
         }
+
+
+        [Test]
+        public async Task ShouldStreamCcyPair()
+        {
+            var cancel = new CancellationTokenSource();
+
+            await CreateSilo(cancel.Token);
+
+            var client = await GetClient();
+
+            var fxConnect = client.GetGrain<IMarketGrain>("FxConnect");
+            var trader1 = client.GetGrain<ITraderGrain>(Guid.NewGuid());
+
+            await fxConnect.Connect( "EUR/USD", "CcyPairStream");
+
+            await trader1.Connect("EUR/USD", "CcyPairStream");
+
+            await fxConnect.OnTick("EUR/USD", 1.32, 1.34);
+
+            await Task.Delay(200);
+
+            var consumedEvents = await trader1.GetConsumedEvents();
+
+            Assert.AreEqual(1, consumedEvents.Count());
+
+        }
+
     }
 }
