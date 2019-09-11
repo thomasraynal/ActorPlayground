@@ -40,8 +40,6 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
             var aggregate = new TState();
 
-            var events = new List<KeyValuePair<int, TState>>();
-
             StreamEventsSlice currentSlice;
 
             do

@@ -140,6 +140,9 @@ namespace ActorPlayground.Orleans.Basics
                 Console.WriteLine("[docker] removing container " + EventStoreContainer);
                 await this.Client.Containers.RemoveContainerAsync(EventStoreContainer, new ContainerRemoveParameters { Force = true });
                 this.Client.Dispose();
+
+                //be sure the co,tainer is removed
+                await Task.Delay(5000);
             }
         }
 

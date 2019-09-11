@@ -1,38 +1,55 @@
-﻿using Orleans.EventSourcing;
+﻿using ActorPlayground.Orleans.Basics.EventStore;
+using Orleans.Core;
+using Orleans.EventSourcing;
+using Orleans.EventSourcing.CustomStorage;
 using Orleans.Providers;
+using Orleans.Runtime;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
+
+    //todo: handle di
     [LogConsistencyProvider(ProviderName = "CcyPairEventStore")]
     [StorageProvider(ProviderName = "CcyPairStorage")]
-    public class CcyPairGrain : JournaledGrain<CcyPair>, ICcyPairGrain
+    public class CcyPairGrain : EventStoreJournaledGrain<CcyPair,IEvent>, ICcyPairGrain
     {
-        
+        public CcyPairGrain()
+        {
+            EventStoreConfiguration = new EventStoreRepositoryConfiguration();
+        }
+
+        public override IEventStoreRepositoryConfiguration EventStoreConfiguration { get; }
+
         public async Task Activate()
         {
-            await ConfirmEvents();
-
             RaiseEvent(new ActivateCcyPair(this.IdentityString));
+
+             await ConfirmEvents();
         }
 
         public async Task Desactivate()
         {
-            await ConfirmEvents();
 
             RaiseEvent(new DesactivateCcyPair(this.IdentityString));
 
-        }
-
-        public async Task<IEnumerable<IEvent>> GetAppliedEvents()
-        {
             await ConfirmEvents();
 
-            var events = await RetrieveConfirmedEvents(0, Version);
+        }
 
-            return events.Cast<IEvent>();
+        //todo : retrieve events from event store
+        public async Task<IEnumerable<IEvent>> GetAppliedEvents()
+        {
+            throw new NotImplementedException();
+
+            //await ConfirmEvents();
+
+            //var events = await RetrieveConfirmedEvents(0, Version);
+
+            //return events.Cast<IEvent>();
         }
 
         public Task<(double bid, double ask)> GetCurrentTick()
@@ -47,9 +64,10 @@ namespace ActorPlayground.Orleans.Basics
 
         public async Task Tick(string market, double ask, double bid)
         {
-            await ConfirmEvents();
-
+   
             RaiseEvent(new ChangeCcyPairPrice(this.IdentityString, market, ask, bid));
+
+            await ConfirmEvents();
 
         }
     }

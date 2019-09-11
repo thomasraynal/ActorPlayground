@@ -10,7 +10,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         int WritePageSize { get; }
         int ReadPageSize { get; }
         ISerializer Serializer { get; }
-        string Url { get; }
+        string ConnectionString { get; }
         ConnectionSettings ConnectionSettings { get; }
     }
 }

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
-    public class DefaultSerializer : ISerializer
+    public class JsonSerializer : ISerializer
     {
         private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
 
