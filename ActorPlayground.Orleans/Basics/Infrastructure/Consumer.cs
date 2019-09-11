@@ -19,7 +19,7 @@ namespace ActorPlayground.Orleans.Basics
             await Disconnect();
 
             State.Provider = provider;
-
+   
             await base.WriteStateAsync();
 
         }

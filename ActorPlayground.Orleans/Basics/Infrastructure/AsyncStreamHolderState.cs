@@ -5,6 +5,7 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics
 {
+    [Serializable]
     public class AsyncStreamHolderState<TEvent>
     {
         public AsyncStreamHolderState()

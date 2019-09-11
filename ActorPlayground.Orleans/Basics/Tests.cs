@@ -28,6 +28,7 @@ namespace ActorPlayground.Orleans.Basics
                                 .AddMemoryGrainStorage("CcyPairStorage")
                                 .AddMemoryGrainStorage("AsyncStreamHandlerStorage")
                                 .AddMemoryGrainStorage("PubSubStore")
+                                .AddLogStorageBasedLogConsistencyProvider("CcyPairEventStore")
                                 .UseLocalhostClustering()
                                 .Configure<ClusterOptions>(options =>
                                 {
@@ -92,26 +93,26 @@ namespace ActorPlayground.Orleans.Basics
             var fxConnect = client.GetGrain<IMarketGrain>("FxConnect");
             await fxConnect.Connect("CcyPairStream");
 
-            var traderId = Guid.NewGuid();
-            var trader = client.GetGrain<IFxFeedGrain<CcyPairChanged>>(traderId);
-            await trader.Connect("CcyPairStream");
-            await trader.Subscribe("EUR/USD");
+            var feedId = Guid.NewGuid();
+            var feed = client.GetGrain<IFxFeedGrain<CcyPairChanged>>(feedId);
+            await feed.Connect("CcyPairStream");
+            await feed.Subscribe("EUR/USD");
 
             await fxConnect.Tick("EUR/USD", 1.32, 1.34);
             await Task.Delay(200);
-            var consumedEvents = await trader.GetConsumedEvents();
+            var consumedEvents = await feed.GetConsumedEvents();
             Assert.AreEqual(1, consumedEvents.Count());
 
-            await trader.Desactivate();
+            await feed.Desactivate();
 
             await fxConnect.Tick("EUR/USD", 1.32, 1.34);
             await Task.Delay(200);
-            consumedEvents = await trader.GetConsumedEvents();
+            consumedEvents = await feed.GetConsumedEvents();
             Assert.AreEqual(0, consumedEvents.Count());
 
             await fxConnect.Tick("EUR/USD", 1.32, 1.34);
             await Task.Delay(200);
-            consumedEvents = await trader.GetConsumedEvents();
+            consumedEvents = await feed.GetConsumedEvents();
             Assert.AreEqual(1, consumedEvents.Count());
 
             cancel.Cancel();
@@ -129,24 +130,24 @@ namespace ActorPlayground.Orleans.Basics
             var fxConnect = client.GetGrain<IMarketGrain>("FxConnect");
             await fxConnect.Connect("CcyPairStream");
 
-            var trader1 = client.GetGrain<IFxFeedGrain<CcyPairChanged>>(Guid.NewGuid());
-            await trader1.Connect("CcyPairStream");
-            await trader1.Subscribe("EUR/USD");
+            var feed1 = client.GetGrain<IFxFeedGrain<CcyPairChanged>>(Guid.NewGuid());
+            await feed1.Connect("CcyPairStream");
+            await feed1.Subscribe("EUR/USD");
 
             await fxConnect.Tick("EUR/USD", 1.32, 1.34);
             await Task.Delay(200);
-            var consumedEvents = await trader1.GetConsumedEvents();
+            var consumedEvents = await feed1.GetConsumedEvents();
             Assert.AreEqual(1, consumedEvents.Count());
 
             await fxConnect.Tick("EUR/CAD", 1.32, 1.34);
             await Task.Delay(200);
-            consumedEvents = await trader1.GetConsumedEvents();
+            consumedEvents = await feed1.GetConsumedEvents();
             Assert.AreEqual(1, consumedEvents.Count());
 
-            await trader1.Subscribe("EUR/CAD");
+            await feed1.Subscribe("EUR/CAD");
             await fxConnect.Tick("EUR/CAD", 1.32, 1.34);
             await Task.Delay(200);
-            consumedEvents = await trader1.GetConsumedEvents();
+            consumedEvents = await feed1.GetConsumedEvents();
             Assert.AreEqual(2, consumedEvents.Count());
 
             cancel.Cancel();
@@ -155,6 +156,54 @@ namespace ActorPlayground.Orleans.Basics
 
         }
 
+        [Test]
+        public async Task ShouldSubscribeToCcyPair()
+        {
+            var cancel = new CancellationTokenSource();
+            var silo = await CreateSilo(cancel.Token);
+            var client = await GetClient();
+
+            var euroDol = client.GetGrain<ICcyPairGrain>("EUR/USD");
+            var eurJpy = client.GetGrain<ICcyPairGrain>("EUR/JPY");
+
+            var fxConnect = client.GetGrain<IMarketGrain>("FxConnect");
+            await fxConnect.Connect("CcyPairStream");
+            var harmony = client.GetGrain<IMarketGrain>("Harmony");
+            await harmony.Connect("CcyPairStream");
+
+            var feed1 = client.GetGrain<IFxFeedGrain<CcyPairChanged>>(Guid.NewGuid());
+            await feed1.Connect("CcyPairStream");
+            await feed1.Subscribe("EUR/USD");
+            await feed1.Subscribe("EUR/JPY");
+
+            await fxConnect.Tick("EUR/USD", 1.32, 1.34);
+            await harmony.Tick("EUR/USD", 1.33, 1.34);
+            await fxConnect.Tick("EUR/USD", 1.34, 1.35);
+
+            await fxConnect.Tick("EUR/JPY", 117.32, 117.34);
+            await harmony.Tick("EUR/JPY", 117.33, 117.34);
+            await harmony.Tick("EUR/JPY", 117.34, 117.35);
+
+            await Task.Delay(2000);
+
+            var currentEurJpyTick = await eurJpy.GetCurrentTick();
+
+            Assert.AreEqual(117.34, currentEurJpyTick.bid);
+            Assert.AreEqual(117.35, currentEurJpyTick.ask);
+
+            var currentEuroDolTick = await euroDol.GetCurrentTick();
+
+            Assert.AreEqual(1.34, currentEuroDolTick.bid);
+            Assert.AreEqual(1.35, currentEuroDolTick.ask);
+
+            var euroDolEvents = await euroDol.GetAppliedEvents();
+
+            Assert.AreEqual(3, euroDolEvents.Count());
+
+            cancel.Cancel();
+            await silo.StopAsync();
+            client.Dispose();
+        }
 
     }
 }

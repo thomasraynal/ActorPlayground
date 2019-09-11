@@ -6,14 +6,17 @@ namespace ActorPlayground.Orleans.Basics
 {
     public class CcyPairChanged : ICcyPair, IHasStreamId
     {
-        public CcyPairChanged(string id, bool isActive, double ask, double bid)
+        public CcyPairChanged(string market, string ccyPair, bool isActive, double ask, double bid)
         {
             IsActive = isActive;
-            StreamId = id;
+            StreamId = ccyPair;
             Ask = ask;
             Bid = bid;
             Date = DateTime.Now;
+            Market = market;
         }
+
+        public string Market { get; }
 
         public string StreamId { get;  }
 

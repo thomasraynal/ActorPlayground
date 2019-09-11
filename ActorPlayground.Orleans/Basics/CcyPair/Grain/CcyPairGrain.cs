@@ -1,25 +1,38 @@
 ﻿using Orleans.EventSourcing;
 using Orleans.Providers;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
+    [LogConsistencyProvider(ProviderName = "CcyPairEventStore")]
     [StorageProvider(ProviderName = "CcyPairStorage")]
     public class CcyPairGrain : JournaledGrain<CcyPair>, ICcyPairGrain
     {
         
-        public Task Activate()
+        public async Task Activate()
         {
-            RaiseEvent(new ActivateCcyPair(this.IdentityString));
+            await ConfirmEvents();
 
-            return Task.CompletedTask;
+            RaiseEvent(new ActivateCcyPair(this.IdentityString));
         }
 
-        public Task Desactivate()
+        public async Task Desactivate()
         {
+            await ConfirmEvents();
+
             RaiseEvent(new DesactivateCcyPair(this.IdentityString));
 
-            return Task.CompletedTask;
+        }
+
+        public async Task<IEnumerable<IEvent>> GetAppliedEvents()
+        {
+            await ConfirmEvents();
+
+            var events = await RetrieveConfirmedEvents(0, Version);
+
+            return events.Cast<IEvent>();
         }
 
         public Task<(double bid, double ask)> GetCurrentTick()
@@ -32,11 +45,12 @@ namespace ActorPlayground.Orleans.Basics
             return Task.FromResult(State.IsActive);
         }
 
-        public Task Tick(string market, double ask, double bid)
+        public async Task Tick(string market, double ask, double bid)
         {
+            await ConfirmEvents();
+
             RaiseEvent(new ChangeCcyPairPrice(this.IdentityString, market, ask, bid));
 
-            return Task.CompletedTask;
         }
     }
 }
