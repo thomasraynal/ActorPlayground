@@ -19,6 +19,20 @@ namespace ActorPlayground.Orleans.Basics
     public class Tests
     {
         private const string serviceId = "OrleansCcyPairs";
+        private EmbeddedEventStoreFixture _embeddedEventStore;
+
+        [OneTimeSetUp]
+        public async Task SetupFixture()
+        {
+            _embeddedEventStore = new EmbeddedEventStoreFixture();
+            await _embeddedEventStore.Initialize();
+        }
+
+        [OneTimeTearDown]
+        public async Task TearDown()
+        {
+            await _embeddedEventStore.Dispose();
+        }
 
         private async Task<ISiloHost> CreateSilo(CancellationToken cancel)
         {

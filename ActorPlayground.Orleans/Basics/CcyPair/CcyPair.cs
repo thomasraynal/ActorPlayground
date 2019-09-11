@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace ActorPlayground.Orleans.Basics
 {
 
-    public class CcyPair : ICcyPair
+    public class CcyPair : ICcyPair, IAggregate
     {
 
         public bool IsActive { get; private set; }
@@ -17,6 +17,7 @@ namespace ActorPlayground.Orleans.Basics
         public double Ask { get; private set; }
 
         public double Bid { get; private set; }
+
 
         public void Apply(IEvent @event)
         {
