@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace ActorPlayground.Orleans.Basics
 {
     //todo: overload AsyncStreamHolderState
-    public abstract class Consumer<TEvent> : Grain<AsyncStreamHolderState<TEvent>>, IAsyncObserver<TEvent>, ICanConnect, ICanSubscribe<TEvent> where TEvent : IHasStreamId
+    public abstract class Consumer<TEvent> : Grain<AsyncStreamHolderState<TEvent>>, IAsyncObserver<TEvent>, ICanConnect, ICanSubscribe where TEvent : IEvent
     {
 
         public async Task Connect(string provider)

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace ActorPlayground.Orleans.Basics
 {
     [StorageProvider(ProviderName = "CcyPairStorage")]
-    public abstract class Producer<TEvent> : Grain, ICanConnect where TEvent : IHasStreamId
+    public abstract class Producer<TEvent> : Grain, ICanConnect where TEvent : IEvent
     {
 
         private Dictionary<string, IAsyncStream<TEvent>> _streams;

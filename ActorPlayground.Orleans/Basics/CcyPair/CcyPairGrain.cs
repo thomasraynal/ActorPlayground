@@ -12,17 +12,13 @@ using System.Threading.Tasks;
 namespace ActorPlayground.Orleans.Basics
 {
 
-    //todo: handle di
     [LogConsistencyProvider(ProviderName = "CcyPairEventStore")]
     [StorageProvider(ProviderName = "CcyPairStorage")]
     public class CcyPairGrain : EventStoreJournaledGrain<CcyPair,IEvent>, ICcyPairGrain
     {
-        public CcyPairGrain()
+        public CcyPairGrain(IEventStoreRepositoryConfiguration eventStoreConfiguration) : base(eventStoreConfiguration)
         {
-            EventStoreConfiguration = new EventStoreRepositoryConfiguration();
         }
-
-        public override IEventStoreRepositoryConfiguration EventStoreConfiguration { get; }
 
         public async Task Activate()
         {

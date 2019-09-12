@@ -17,23 +17,23 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         where TState : class, IAggregate, new()
         where TEvent : class, IEvent
     {
-        private IEventStoreConnection _eventStoreConnection;
+
+        private readonly IEventStoreRepositoryConfiguration _eventStoreConfiguration;
         private EventStoreRepository _repository;
 
-        public abstract IEventStoreRepositoryConfiguration EventStoreConfiguration { get; }
+        protected EventStoreJournaledGrain(IEventStoreRepositoryConfiguration eventStoreConfiguration)
+        {
+            _eventStoreConfiguration = eventStoreConfiguration;
+        }
 
         public override Task OnActivateAsync()
         {
-            _eventStoreConnection = new ExternalEventStore(EventStoreConfiguration.ConnectionString, EventStoreConfiguration.ConnectionSettings).Connection;
-
-            _repository = new EventStoreRepository(EventStoreConfiguration, _eventStoreConnection, new ConnectionStatusMonitor(_eventStoreConnection));
-
+            _repository = EventStoreRepository.Create(_eventStoreConfiguration);
             return Task.CompletedTask;
         }
 
         public override Task OnDeactivateAsync()
         {
-            _eventStoreConnection.Close();
             _repository.Dispose();
 
             return Task.CompletedTask;
@@ -46,7 +46,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
                 await _repository.Save<TState>(IdentityString, Version - 1, updates.Cast<IEvent>());
             }
             //https://dotnet.github.io/orleans/Documentation/grains/event_sourcing/log_consistency_providers.html
-            catch (WrongExpectedVersionException ex)
+            catch (WrongExpectedVersionException)
             {
                 return false;
             }

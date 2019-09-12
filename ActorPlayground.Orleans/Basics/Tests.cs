@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using Orleans.Providers;
 using System.Linq;
 using Orleans.Streams;
+using Microsoft.Extensions.DependencyInjection;
+using ActorPlayground.Orleans.Basics.EventStore;
 
 namespace ActorPlayground.Orleans.Basics
 {
@@ -48,6 +50,10 @@ namespace ActorPlayground.Orleans.Basics
                                 {
                                     options.ClusterId = "dev";
                                     options.ServiceId = serviceId;
+                                })
+                                .ConfigureServices(services =>
+                                {
+                                    services.AddTransient<IEventStoreRepositoryConfiguration, EventStoreRepositoryConfiguration>();
                                 })
                                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(Assembly.GetExecutingAssembly()).WithReferences())
                                 .ConfigureLogging(logging => logging.AddConsole());
@@ -218,6 +224,12 @@ namespace ActorPlayground.Orleans.Basics
             await silo.StopAsync();
             client.Dispose();
         }
+
+        //[Test]
+        //public async Task CreateAndCallStreamProvider()
+        //{
+
+        //}
 
     }
 }

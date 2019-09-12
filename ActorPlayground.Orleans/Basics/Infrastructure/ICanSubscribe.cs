@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public interface ICanSubscribe<TEvent> where TEvent : IHasStreamId
+    public interface ICanSubscribe
     {
         Task Subscribe(string subject);
         Task Unsubscribe(string subject);

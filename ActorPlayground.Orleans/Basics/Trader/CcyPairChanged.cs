@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public class CcyPairChanged : ICcyPair, IHasStreamId
+    public class CcyPairChanged : ICcyPair, IEvent
     {
         public CcyPairChanged(string market, string ccyPair, bool isActive, double ask, double bid)
         {

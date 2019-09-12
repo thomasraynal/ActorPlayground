@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public interface IFxFeedGrain<TEvent> : IGrainWithGuidKey, ICanConnect, ICanSubscribe<TEvent> where TEvent : IHasStreamId
+    public interface IFxFeedGrain<TEvent> : IGrainWithGuidKey, ICanConnect, ICanSubscribe where TEvent : IEvent
     {
-        Task<IEnumerable<CcyPairChanged>> GetConsumedEvents();
+        Task<IEnumerable<TEvent>> GetConsumedEvents();
         Task Desactivate();
     }
 }

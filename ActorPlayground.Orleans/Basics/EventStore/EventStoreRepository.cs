@@ -17,7 +17,16 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         private bool _isConnected;
 
-        public EventStoreRepository(IEventStoreRepositoryConfiguration configuration, IEventStoreConnection eventStoreConnection, IConnectionStatusMonitor connectionMonitor)
+        public static EventStoreRepository Create(IEventStoreRepositoryConfiguration repositoryConfiguration)
+        {
+            var eventStoreConnection = new ExternalEventStore(repositoryConfiguration.ConnectionString, repositoryConfiguration.ConnectionSettings).Connection;
+
+            var repository = new EventStoreRepository(repositoryConfiguration, eventStoreConnection, new ConnectionStatusMonitor(eventStoreConnection));
+
+            return repository;
+        }
+
+        private EventStoreRepository(IEventStoreRepositoryConfiguration configuration, IEventStoreConnection eventStoreConnection, IConnectionStatusMonitor connectionMonitor)
         {
 
             _configuration = configuration;
@@ -160,6 +169,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public void Dispose()
         {
+            _eventStoreConnection.Close();
             _cleanup.Dispose();
         }
     }

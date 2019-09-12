@@ -4,8 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public interface IEvent
+    public interface IEvent : IHasStreamId
     {
-        string StreamId { get; }
     }
 }
