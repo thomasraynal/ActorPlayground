@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using Microsoft.Extensions.Logging;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
@@ -10,78 +11,70 @@ namespace ActorPlayground.Orleans.Basics.EventStore
     public class ConnectionStatusMonitor : IConnectionStatusMonitor
     {
         private readonly IConnectableObservable<ConnectionInfo> _connectionInfoChanged;
-        private readonly IDisposable _connection;
+        private readonly IDisposable _cleanup;
         private readonly IEventStoreConnection _eventStoreConnection;
-        private BehaviorSubject<bool> _isConnected;
+        private readonly BehaviorSubject<bool> _isConnected;
 
-        public IObservable<bool> IsConnected
+        public bool IsConnected
         {
             get
             {
-                return _isConnected.AsObservable();
+                return _isConnected.Value;
             }
         }
 
-        public ConnectionStatusMonitor(IEventStoreConnection connection)
+        public async Task Connect()
         {
+           await _eventStoreConnection.ConnectAsync();
+        }
 
+        public ConnectionStatusMonitor(IEventStoreConnection eventStoreConnection)
+        {
+            _eventStoreConnection = eventStoreConnection;
             _isConnected = new BehaviorSubject<bool>(false);
 
-            connection.ConnectAsync().Wait();
 
-            var connected = Observable.FromEventPattern<ClientConnectionEventArgs>(h => connection.Connected += h, h => connection.Connected -= h).Select(_ =>
+            var connected = Observable.FromEventPattern<ClientConnectionEventArgs>(h => _eventStoreConnection.Connected += h, h => _eventStoreConnection.Connected -= h).Select(_ =>
             {
                 return ConnectionStatus.Connected;
             });
 
-            var disconnected = Observable.FromEventPattern<ClientConnectionEventArgs>(h => connection.Disconnected += h, h => connection.Disconnected -= h).Select(_ =>
+            var disconnected = Observable.FromEventPattern<ClientConnectionEventArgs>(h => _eventStoreConnection.Disconnected += h, h => _eventStoreConnection.Disconnected -= h).Select(_ =>
             {
                 return ConnectionStatus.Disconnected;
             });
 
-            var reconnecting = Observable.FromEventPattern<ClientReconnectingEventArgs>(h => connection.Reconnecting += h, h => connection.Reconnecting -= h).Select(_ =>
+            var reconnecting = Observable.FromEventPattern<ClientReconnectingEventArgs>(h => _eventStoreConnection.Reconnecting += h, h => _eventStoreConnection.Reconnecting -= h).Select(_ =>
             {
                 return ConnectionStatus.Connecting;
             });
 
-            var closed = Observable.FromEventPattern<ClientClosedEventArgs>(h => connection.Closed += h, h => connection.Closed -= h).Select(arg =>
+            var closed = Observable.FromEventPattern<ClientClosedEventArgs>(h => _eventStoreConnection.Closed += h, h => _eventStoreConnection.Closed -= h).Select(arg =>
             {
                 return ConnectionStatus.Closed;
             });
 
-            var errorOccurred = Observable.FromEventPattern<ClientErrorEventArgs>(h => connection.ErrorOccurred += h, h => connection.ErrorOccurred -= h).Select(arg =>
+            var errorOccurred = Observable.FromEventPattern<ClientErrorEventArgs>(h => _eventStoreConnection.ErrorOccurred += h, h => _eventStoreConnection.ErrorOccurred -= h).Select(arg =>
             {
                 return ConnectionStatus.ErrorOccurred;
             });
 
-            var authenticationFailed = Observable.FromEventPattern<ClientAuthenticationFailedEventArgs>(h => connection.AuthenticationFailed+= h, h => connection.AuthenticationFailed -= h).Select(arg =>
+            var authenticationFailed = Observable.FromEventPattern<ClientAuthenticationFailedEventArgs>(h => _eventStoreConnection.AuthenticationFailed+= h, h => _eventStoreConnection.AuthenticationFailed -= h).Select(arg =>
             {
                 return ConnectionStatus.AuthenticationFailed;
             });
 
             _connectionInfoChanged = Observable.Merge(connected, disconnected, reconnecting, closed, errorOccurred, authenticationFailed)
                                                .Scan(ConnectionInfo.Initial, UpdateConnectionInfo)
-                                               .StartWith(ConnectionInfo.Initial)
-                                               .Do(c => _isConnected.OnNext(c.Status ==  ConnectionStatus.Connected))
                                                .Replay(1);
 
-            _connection = _connectionInfoChanged.Connect();
-
-            _eventStoreConnection = connection;
+            _cleanup = _connectionInfoChanged.Connect();
 
         }
-
 
         public void Dispose()
         {
-            _connection.Dispose();
-        }
-
-        public IObservable<IConnected<IEventStoreConnection>> GetEventStoreConnectedStream()
-        {
-            return _connectionInfoChanged
-                          .Where(con => con.Status == ConnectionStatus.Connected || con.Status == ConnectionStatus.Disconnected)
-                          .Select(con => con.Status == ConnectionStatus.Connected ? Connected.Yes(_eventStoreConnection) : Connected.No<IEventStoreConnection>());
+            _cleanup.Dispose();
         }
 
         private ConnectionInfo UpdateConnectionInfo(ConnectionInfo previousConnectionInfo, ConnectionStatus connectionStatus)
@@ -96,6 +89,10 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             {
                 newConnectionInfo = new ConnectionInfo(connectionStatus, previousConnectionInfo.ConnectCount);
             }
+
+            _isConnected.OnNext(connectionStatus == ConnectionStatus.Connected);
+
+            Debug.WriteLine(connectionStatus);
 
             return newConnectionInfo;
         }

@@ -5,8 +5,6 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 {
     public static class EventStoreConnectionSettings
     {
-        public static readonly ConnectionSettingsBuilder Default = ConnectionSettings.Create()
-                                                                                     .SetReconnectionDelayTo(TimeSpan.FromSeconds(1))
-                                                                                     .KeepReconnecting();
+        public static readonly ConnectionSettings Default = ConnectionSettings.Create().KeepRetrying().KeepReconnecting().Build();
     }
 }

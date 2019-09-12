@@ -11,6 +11,6 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         public int ReadPageSize { get; set; } = 500;
         public ISerializer Serializer { get; set; } = new JsonSerializer();
         public string ConnectionString { get; set; } = $"tcp://admin:changeit@localhost:1113";
-        public ConnectionSettings ConnectionSettings { get; set; } = ConnectionSettings.Default;
+        public ConnectionSettings ConnectionSettings { get; set; } = EventStoreConnectionSettings.Default;
     }
 }

@@ -18,7 +18,7 @@ using ActorPlayground.Orleans.Basics.EventStore;
 namespace ActorPlayground.Orleans.Basics
 {
     [TestFixture]
-    public class Tests
+    public class TestsOrleans
     {
         private const string serviceId = "OrleansCcyPairs";
         private EmbeddedEventStoreFixture _embeddedEventStore;

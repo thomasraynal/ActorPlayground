@@ -3,6 +3,8 @@ using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,14 +15,14 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         private readonly IEventStoreConnection _eventStoreConnection;
         private readonly IEventStoreRepositoryConfiguration _configuration;
         private readonly Dictionary<string, Type> _eventTypeCache;
-        private readonly IDisposable _cleanup;
+        private readonly IConnectionStatusMonitor _connectionMonitor;
 
-        private bool _isConnected;
+        public bool IsConnected => _connectionMonitor.IsConnected;
 
+        //todo : check isconnected + timeout
         public static EventStoreRepository Create(IEventStoreRepositoryConfiguration repositoryConfiguration)
         {
             var eventStoreConnection = new ExternalEventStore(repositoryConfiguration.ConnectionString, repositoryConfiguration.ConnectionSettings).Connection;
-
             var repository = new EventStoreRepository(repositoryConfiguration, eventStoreConnection, new ConnectionStatusMonitor(eventStoreConnection));
 
             return repository;
@@ -28,20 +30,31 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         private EventStoreRepository(IEventStoreRepositoryConfiguration configuration, IEventStoreConnection eventStoreConnection, IConnectionStatusMonitor connectionMonitor)
         {
-
             _configuration = configuration;
             _eventStoreConnection = eventStoreConnection;
             _eventTypeCache = new Dictionary<string, Type>();
-
-            _cleanup = connectionMonitor
-                        .IsConnected
-                        .Subscribe(obs => _isConnected = obs);
-
+            _connectionMonitor = connectionMonitor;
         }
 
-        public async Task<(int, TState)> GetById<TKey, TState>(TKey id) where TState : class, IAggregate, new()
+        public async Task Connect(TimeSpan timeout)
         {
-            if (!_isConnected) throw new InvalidOperationException("not connected");
+            await _connectionMonitor.Connect();
+            await Wait.Until(() => IsConnected, timeout);
+        }
+
+        public IObservable<IEvent> SubscribeFrom(string streamId, int from)
+        {
+            return Observable.Empty<IEvent>();
+        }
+
+        public IObservable<IEvent> Observe(string streamId, bool rewindAfterDisconnection = false)
+        {
+            return CreateSubscription(streamId, rewindAfterDisconnection).Retry();
+        }
+
+        public async Task<(int, TState)> GetOne<TKey, TState>(TKey id) where TState : class, IAggregate, new()
+        {
+            if (!IsConnected) throw new InvalidOperationException("not connected");
 
             var streamName = $"{id}";
 
@@ -76,22 +89,14 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return ((int)eventNumber, aggregate);
         }
 
-        private Type GetEventType(string type)
+        public async Task Save(string streamId, int originalVersion, IEnumerable<IEvent> pendingEvents, params KeyValuePair<string, string>[] extraHeaders)
         {
-            if (!_eventTypeCache.ContainsKey(type))
-            {
-                _eventTypeCache[type] = Type.GetType(type, true, true);
-            }
 
-            return _eventTypeCache[type];
-        }
-
-        public async Task Save<TAggregate>(string streamId, int originalVersion, IEnumerable<IEvent> pendingEvents, params KeyValuePair<string, string>[] extraHeaders) where TAggregate : IAggregate, new()
-        {
+            if (!IsConnected) throw new InvalidOperationException("not connected");
 
             WriteResult result;
 
-            var commitHeaders = CreateCommitHeaders<TAggregate>(extraHeaders);
+            var commitHeaders = CreateCommitHeaders(extraHeaders);
             var eventsToSave = pendingEvents.Select(ev => ToEventData(ev, commitHeaders));
 
             var eventBatches = GetEventBatches(eventsToSave);
@@ -115,6 +120,49 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         }
 
+        private IObservable<IEvent> CreateSubscription(string streamId, bool rewindfAfterDisconnection)
+        {
+            return Observable.Create<IEvent>(async (obs) =>
+            {
+                var subscription = await CreateEventStoreSubscription(streamId, obs, rewindfAfterDisconnection);
+
+                return Disposable.Create(() =>
+                {
+                    subscription.Close();
+                });
+            });
+        }
+
+        private async Task<EventStoreSubscription> CreateEventStoreSubscription(string streamId, IObserver<IEvent> obs, bool rewindfAfterDisconnection)
+        {
+            return await _eventStoreConnection.SubscribeToStreamAsync(streamId, true, (eventStoreSubscription, resolvedEvent) =>
+                {
+                    var @event = DeserializeEvent(resolvedEvent.Event);
+
+                    obs.OnNext(@event);
+
+                }, (subscription, reason, exception)=>
+                {
+                    obs.OnError(exception);
+                });
+        }
+
+        public void Dispose()
+        {
+            _eventStoreConnection.Close();
+            _connectionMonitor.Dispose();
+        }
+
+        private Type GetEventType(string type)
+        {
+            if (!_eventTypeCache.ContainsKey(type))
+            {
+                _eventTypeCache[type] = Type.GetType(type, true, true);
+            }
+
+            return _eventTypeCache[type];
+        }
+
         private IEvent DeserializeEvent(RecordedEvent evt)
         {
             return _configuration.Serializer.DeserializeObject(evt.Data, GetEventType(evt.EventType)) as IEvent;
@@ -125,23 +173,9 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return events.Batch(_configuration.WritePageSize).Select(x => (IList<EventData>)x.ToList()).ToList();
         }
 
-        protected virtual IDictionary<string, string> GetCommitHeaders<TAggregate>()
+        private IDictionary<string, string> CreateCommitHeaders(KeyValuePair<string, string>[] extraHeaders)
         {
-            var commitId = Guid.NewGuid();
-
-            return new Dictionary<string, string>
-            {
-                {MetadataKeys.CommitIdHeader, commitId.ToString()},
-                {MetadataKeys.AggregateClrTypeHeader, typeof(TAggregate).AssemblyQualifiedName},
-                {MetadataKeys.UserIdentityHeader, Thread.CurrentPrincipal?.Identity?.Name},
-                {MetadataKeys.ServerNameHeader, Environment.MachineName},
-                {MetadataKeys.ServerClockHeader, DateTime.UtcNow.ToString("o")}
-            };
-        }
-
-        private IDictionary<string, string> CreateCommitHeaders<TAggregate>(KeyValuePair<string, string>[] extraHeaders)
-        {
-            var commitHeaders = GetCommitHeaders<TAggregate>();
+            var commitHeaders = GetCommitHeaders();
 
             foreach (var extraHeader in extraHeaders)
             {
@@ -167,10 +201,18 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return new EventData(eventId, typeName, true, data, metadata);
         }
 
-        public void Dispose()
+        protected virtual IDictionary<string, string> GetCommitHeaders()
         {
-            _eventStoreConnection.Close();
-            _cleanup.Dispose();
+            var commitId = Guid.NewGuid();
+
+            return new Dictionary<string, string>
+            {
+                {MetadataKeys.CommitIdHeader, commitId.ToString()},
+                {MetadataKeys.UserIdentityHeader, Thread.CurrentPrincipal?.Identity?.Name},
+                {MetadataKeys.ServerNameHeader, Environment.MachineName},
+                {MetadataKeys.ServerClockHeader, DateTime.UtcNow.ToString("o")}
+            };
         }
+
     }
 }

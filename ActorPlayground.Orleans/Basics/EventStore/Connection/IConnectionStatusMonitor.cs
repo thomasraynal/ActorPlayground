@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
-    public interface IConnectionStatusMonitor
+    public interface IConnectionStatusMonitor : IDisposable
     {
-        IObservable<bool> IsConnected { get; }
-        IObservable<IConnected<IEventStoreConnection>> GetEventStoreConnectedStream();
+        bool IsConnected { get; }
+        Task Connect();
     }
 }

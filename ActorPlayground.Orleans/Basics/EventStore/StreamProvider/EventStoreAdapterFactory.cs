@@ -11,6 +11,9 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         public Task<IQueueAdapter> CreateAdapter()
         {
             throw new NotImplementedException();
+
+            //var adpter = new EventStoreQueueAdapter();
+            //return Task.FromResult<IQueueAdapter>(adpter);
         }
 
         public Task<IStreamFailureHandler> GetDeliveryFailureHandler(QueueId queueId)
