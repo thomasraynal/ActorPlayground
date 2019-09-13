@@ -16,8 +16,10 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         private readonly IEventStoreRepositoryConfiguration _configuration;
         private readonly Dictionary<string, Type> _eventTypeCache;
         private readonly IConnectionStatusMonitor _connectionMonitor;
+        private bool _isStarted;
 
         public bool IsConnected => _connectionMonitor.IsConnected;
+        public bool IStarted => _isStarted;
 
         public static EventStoreRepository Create(IEventStoreRepositoryConfiguration repositoryConfiguration)
         {
@@ -37,6 +39,10 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public async Task Connect(TimeSpan timeout)
         {
+            if (_isStarted) return;
+
+            _isStarted = true;
+
             await _connectionMonitor.Connect();
             await Wait.Until(() => IsConnected, timeout);
         }

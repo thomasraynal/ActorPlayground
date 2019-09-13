@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using Orleans.Providers.Streams.Common;
 using Orleans.Streams;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,13 +17,17 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         private readonly string _providerName;
 
         private EventStoreRepository _eventStoreRepository;
+        private IDisposable _cleanUp;
+        private readonly ConcurrentQueue<IBatchContainer> _receivedMessages;
 
-        public EventStoreAdapterReceiver(IEventStoreRepositoryConfiguration repositoryConfiguration, ILoggerFactory loggerFactory, QueueId queueId, string providerName)
+        public EventStoreAdapterReceiver(IEventStoreRepositoryConfiguration eventStoreRepositoryConfiguration, ILoggerFactory loggerFactory, QueueId queueId, string providerName)
         {
-            _repositoryConfiguration = repositoryConfiguration;
+            _repositoryConfiguration = eventStoreRepositoryConfiguration;
             _loggerFactory = loggerFactory;
             _queueId = queueId;
             _providerName = providerName;
+            _eventStoreRepository = EventStoreRepository.Create(eventStoreRepositoryConfiguration);
+            _receivedMessages = new ConcurrentQueue<IBatchContainer>();
         }
 
         public static IQueueAdapterReceiver Create(IEventStoreRepositoryConfiguration repositoryConfiguration, ILoggerFactory loggerFactory, QueueId queueId, string providerName)
@@ -29,61 +35,47 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return new EventStoreAdapterReceiver(repositoryConfiguration, loggerFactory, queueId, providerName);
         }
 
-        public async Task<IList<IBatchContainer>> GetQueueMessagesAsync(int maxCount)
+        public async Task CreateSubscription(string streamId, EventSequenceToken eventSequenceToken)
         {
-            throw new NotImplementedException();
-
-            //return await Task.Run(() =>
-            //{
-
-            //    List<IBatchContainer> batches = null;
-            //    int count = 0;
-
-            //    while (!_shutdownRequested)
-            //    {
-            //        if (count == maxCount)
-            //            return batches;
-
-            //        if (!IsConnected())
-            //            Connect();
-
-            //        var result = _model.BasicGet(_config.Queue, false);
-
-            //        if (result == null)
-            //            return batches;
-
-            //        if (batches == null)
-            //            batches = new List<IBatchContainer>();
-
-            //        batches.Add(CreateContainer(result));
-
-            //        count++;
-            //    }
-
-            //    return null;
-
-
-            //});
-        }
-
-        public async Task Initialize(TimeSpan timeout)
-        {
-            _eventStoreRepository = EventStoreRepository.Create(_repositoryConfiguration);
 
             await _eventStoreRepository.Connect(TimeSpan.FromSeconds(5));
 
+            long? position = (eventSequenceToken == null || eventSequenceToken.EventIndex == int.MinValue) ? null : (long?)eventSequenceToken.EventIndex;
+
+            _cleanUp = _eventStoreRepository.Observe(streamId, position, true)
+                                        .Subscribe(ev => _receivedMessages.Enqueue(new EventStoreBatchContainer(Guid.Empty, streamId, eventSequenceToken, ev)));
+
+        }
+
+        public Task<IList<IBatchContainer>> GetQueueMessagesAsync(int maxCount)
+        {
+            IList<IBatchContainer> containerList = new List<IBatchContainer>();
+
+            while (containerList.Count < maxCount && _receivedMessages.TryDequeue(out IBatchContainer container))
+            {
+                containerList.Add(container);
+            }
+
+            return Task.FromResult(containerList);
         }
 
         public Task MessagesDeliveredAsync(IList<IBatchContainer> messages)
         {
-            throw new NotImplementedException();
+            //todo: handle ack for persistent subscriptions
+            return Task.CompletedTask;
         }
 
         public Task Shutdown(TimeSpan timeout)
         {
+            if (null != _cleanUp) _cleanUp.Dispose();
             _eventStoreRepository.Dispose();
 
             return Task.CompletedTask;
+        }
+
+        public async Task Initialize(TimeSpan timeout)
+        {
+            await _eventStoreRepository.Connect(timeout);
         }
     }
 }

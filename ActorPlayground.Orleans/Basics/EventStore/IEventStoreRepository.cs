@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
+    //todo : handle persistent subscriptions
     public interface IEventStoreRepository
     {
         bool IsConnected { get; }

@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EventStore.ClientAPI;
+using Microsoft.Extensions.Logging;
 using Orleans.Streams;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,17 +11,20 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 {
     public class EventStoreQueueAdapter : IQueueAdapter
     {
-        private readonly IEventStoreRepositoryConfiguration _repositoryConfiguration;
+        private readonly IEventStoreRepositoryConfiguration _eventStoreRepositoryConfiguration;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly IStreamQueueMapper _streamQueueMapper;
         private readonly string _providerName;
+        private readonly EventStoreRepository _eventStoreRepository;
 
-        public EventStoreQueueAdapter(IEventStoreRepositoryConfiguration repositoryConfiguration, ILoggerFactory loggerFactory, string providerName, IStreamQueueMapper streamQueueMapper)
+        public EventStoreQueueAdapter(string providerName, IEventStoreRepositoryConfiguration eventStoreRepositoryConfiguration, ILoggerFactory loggerFactory)
         {
-            _repositoryConfiguration = repositoryConfiguration;
+            _eventStoreRepositoryConfiguration = eventStoreRepositoryConfiguration;
             _loggerFactory = loggerFactory;
-            _streamQueueMapper = streamQueueMapper;
             _providerName = providerName;
+
+            //todo: use 2 repository (queue adpater + receiver)
+            //todo: dispose
+            _eventStoreRepository = EventStoreRepository.Create(eventStoreRepositoryConfiguration);
         }
 
         public string Name { get; private set; }
@@ -30,24 +35,19 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public IQueueAdapterReceiver CreateReceiver(QueueId queueId)
         {
-            return EventStoreAdapterReceiver.Create(_repositoryConfiguration, _loggerFactory, queueId, Name);
+            return EventStoreAdapterReceiver.Create(_eventStoreRepositoryConfiguration, _loggerFactory, queueId, Name);
         }
 
         public async Task QueueMessageBatchAsync<T>(Guid streamGuid, string streamNamespace, IEnumerable<T> events, StreamSequenceToken token, Dictionary<string, object> requestContext)
         {
-            await Task.Run(() =>
+            if (!_eventStoreRepository.IStarted)
             {
-                var queue = _streamQueueMapper.GetQueueForStream(streamGuid, streamNamespace);
+                await _eventStoreRepository.Connect(TimeSpan.FromSeconds(5));
+            }
 
-                // TODO: Handle queues.
+            //handle failure not connected
+            await _eventStoreRepository.SavePendingEvents(streamNamespace, ExpectedVersion.Any, events.Cast<IEvent>());
 
-                //foreach (var e in events)
-                //{
-                //    var bytes = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(e));
-                //    _model.BasicPublish(_config.Exchange, _config.RoutingKey, null, bytes);
-                //}
-
-            });
         }
     }
 }
