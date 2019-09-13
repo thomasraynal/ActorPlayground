@@ -44,7 +44,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         {
             try
             {
-                await _repository.Save(IdentityString, Version - 1, updates.Cast<IEvent>());
+                await _repository.SavePendingEvents(IdentityString, Version - 1, updates.Cast<IEvent>());
             }
             //https://dotnet.github.io/orleans/Documentation/grains/event_sourcing/log_consistency_providers.html
             catch (WrongExpectedVersionException)
@@ -57,7 +57,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public async Task<KeyValuePair<int, TState>> ReadStateFromStorage()
         {
-            var (version, state) = await _repository.GetOne<string, TState>(IdentityString);
+            var (version, state) = await _repository.GetAggregate<string, TState>(IdentityString);
 
             return KeyValuePair.Create(version, state);
         }

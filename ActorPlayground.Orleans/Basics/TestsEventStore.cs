@@ -13,14 +13,14 @@ namespace ActorPlayground.Orleans.Basics
     {
         private EmbeddedEventStoreFixture _embeddedEventStore;
 
-        [OneTimeSetUp]
+        [SetUp]
         public async Task SetupFixture()
         {
             _embeddedEventStore = new EmbeddedEventStoreFixture();
             await _embeddedEventStore.Initialize();
         }
 
-        [OneTimeTearDown]
+        [TearDown]
         public async Task TearDown()
         {
             await _embeddedEventStore.Dispose();
@@ -30,20 +30,22 @@ namespace ActorPlayground.Orleans.Basics
         public async Task ShouldCreateAndResumeConnection()
         {
 
-            EventStoreRepository repository = null ;
+            var repository = EventStoreRepository.Create(new EventStoreRepositoryConfiguration());
 
-            repository = EventStoreRepository.Create(new EventStoreRepositoryConfiguration());
             await repository.Connect(TimeSpan.FromSeconds(10));
+
+            //wait for EventStore to setup user accounts
+            await Task.Delay(500);
 
             var counter = 0;
 
-            var disposable = repository.Observe("EUR/USD")
+            var subscription = repository.Observe("EUR/USD")
                                        .Subscribe(ev =>
                                         {
                                             counter++;
                                         });
 
-            await repository.Save("EUR/USD", -1, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
+            await repository.SavePendingEvents("EUR/USD", -1, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
 
             await Task.Delay(200);
 
@@ -54,12 +56,96 @@ namespace ActorPlayground.Orleans.Basics
 
             await Wait.Until(() => repository.IsConnected, TimeSpan.FromSeconds(5));
 
-            await repository.Save("EUR/USD", -1, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
+            //wait for EventStore to setup user accounts
+            await Task.Delay(500);
+
+            await repository.SavePendingEvents("EUR/USD", -1, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
 
             await Task.Delay(200);
 
             Assert.AreEqual(2, counter);
 
+            subscription.Dispose();
+            repository.Dispose();
+
+        }
+
+        [Test]
+        public async Task ShouldSubscribeFromVersion()
+        {
+            var repository = EventStoreRepository.Create(new EventStoreRepositoryConfiguration());
+
+            await repository.Connect(TimeSpan.FromSeconds(10));
+
+            //wait for EventStore to setup user accounts
+            await Task.Delay(500);
+
+            await repository.SavePendingEvents("EUR/USD", -1, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
+            await Task.Delay(200);
+
+            await repository.SavePendingEvents("EUR/USD", 0, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
+            await Task.Delay(200);
+
+            repository.Dispose();
+
+            repository = EventStoreRepository.Create(new EventStoreRepositoryConfiguration());
+            await repository.Connect(TimeSpan.FromSeconds(10));
+
+            //wait for EventStore to setup user accounts
+            await Task.Delay(500);
+
+            var counter = 0;
+            var subscription = repository.Observe("EUR/USD", 1)
+                           .Subscribe(ev =>
+                           {
+                               counter++;
+                           });
+
+            await Task.Delay(200);
+
+            Assert.AreEqual(1, counter);
+
+            subscription.Dispose();
+            repository.Dispose();
+        }
+
+        [Test]
+        public async Task ShouldCatchUpStream()
+        {
+            var repository = EventStoreRepository.Create(new EventStoreRepositoryConfiguration());
+
+            await repository.Connect(TimeSpan.FromSeconds(10));
+
+            //wait for EventStore to setup user accounts
+            await Task.Delay(500);
+
+            await repository.SavePendingEvents("EUR/USD", -1, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
+            await Task.Delay(200);
+
+            await repository.SavePendingEvents("EUR/USD", 0, new[] { new CcyPairChanged("Harmony", "EUR/USD", true, 1.32, 1.34) });
+            await Task.Delay(200);
+
+            repository.Dispose();
+
+            repository = EventStoreRepository.Create(new EventStoreRepositoryConfiguration());
+            await repository.Connect(TimeSpan.FromSeconds(10));
+
+            //wait for EventStore to setup user accounts
+            await Task.Delay(500);
+
+            var counter = 0;
+            var subscription = repository.Observe("EUR/USD",rewindAfterDisconnection : true)
+                           .Subscribe(ev =>
+                           {
+                               counter++;
+                           });
+
+            await Task.Delay(200);
+
+            Assert.AreEqual(2, counter);
+
+            subscription.Dispose();
+            repository.Dispose();
         }
 
     }

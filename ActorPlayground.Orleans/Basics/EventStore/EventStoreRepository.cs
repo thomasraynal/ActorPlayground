@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
-    public class EventStoreRepository
+    public class EventStoreRepository : IEventStoreRepository
     {
         private readonly IEventStoreConnection _eventStoreConnection;
         private readonly IEventStoreRepositoryConfiguration _configuration;
@@ -19,7 +19,6 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public bool IsConnected => _connectionMonitor.IsConnected;
 
-        //todo : check isconnected + timeout
         public static EventStoreRepository Create(IEventStoreRepositoryConfiguration repositoryConfiguration)
         {
             var eventStoreConnection = new ExternalEventStore(repositoryConfiguration.ConnectionString, repositoryConfiguration.ConnectionSettings).Connection;
@@ -42,17 +41,14 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             await Wait.Until(() => IsConnected, timeout);
         }
 
-        public IObservable<IEvent> SubscribeFrom(string streamId, int from)
+        public IObservable<IEvent> Observe(string streamId, long? fromIncluding = null, bool rewindAfterDisconnection = false)
         {
-            return Observable.Empty<IEvent>();
+            return CreateSubscription(streamId, fromIncluding, rewindAfterDisconnection)
+                 .TakeUntil((_) => !IsConnected)
+                 .Retry();
         }
 
-        public IObservable<IEvent> Observe(string streamId, bool rewindAfterDisconnection = false)
-        {
-            return CreateSubscription(streamId, rewindAfterDisconnection).Retry();
-        }
-
-        public async Task<(int, TState)> GetOne<TKey, TState>(TKey id) where TState : class, IAggregate, new()
+        public async Task<(int version, TState aggregate)> GetAggregate<TKey, TState>(TKey id) where TState : class, IAggregate, new()
         {
             if (!IsConnected) throw new InvalidOperationException("not connected");
 
@@ -89,7 +85,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return ((int)eventNumber, aggregate);
         }
 
-        public async Task Save(string streamId, int originalVersion, IEnumerable<IEvent> pendingEvents, params KeyValuePair<string, string>[] extraHeaders)
+        public async Task SavePendingEvents(string streamId, long originalVersion, IEnumerable<IEvent> pendingEvents, params KeyValuePair<string, string>[] extraHeaders)
         {
 
             if (!IsConnected) throw new InvalidOperationException("not connected");
@@ -120,37 +116,68 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         }
 
-        private IObservable<IEvent> CreateSubscription(string streamId, bool rewindfAfterDisconnection)
+        private IObservable<IEvent> CreateSubscription(string streamId, long? fromIncluding, bool rewindfAfterDisconnection)
         {
             return Observable.Create<IEvent>(async (obs) =>
             {
-                var subscription = await CreateEventStoreSubscription(streamId, obs, rewindfAfterDisconnection);
-
-                return Disposable.Create(() =>
-                {
-                    subscription.Close();
-                });
+                return  await CreateEventStoreSubscription(streamId, obs, fromIncluding, rewindfAfterDisconnection);
             });
         }
 
-        private async Task<EventStoreSubscription> CreateEventStoreSubscription(string streamId, IObserver<IEvent> obs, bool rewindfAfterDisconnection)
+        private async Task<IDisposable> CreateEventStoreSubscription(string streamId, IObserver<IEvent> obs, long? fromIncluding, bool rewindfAfterDisconnection)
         {
-            return await _eventStoreConnection.SubscribeToStreamAsync(streamId, true, (eventStoreSubscription, resolvedEvent) =>
+            if (fromIncluding != null || rewindfAfterDisconnection)
+            {
+                var settings = new CatchUpSubscriptionSettings(10000, 500, false, true, streamId);
+
+                //SubscribeToStreamFrom lastChekcpoint is exclusive
+                long? position = fromIncluding == null ? null : fromIncluding - 1;
+
+                var catchUpSubscription = _eventStoreConnection.SubscribeToStreamFrom(streamId, position, settings, (eventStoreSubscription, resolvedEvent) =>
                 {
                     var @event = DeserializeEvent(resolvedEvent.Event);
 
                     obs.OnNext(@event);
 
-                }, (subscription, reason, exception)=>
-                {
-                    obs.OnError(exception);
-                });
-        }
+                }, (eventStoreCatchUpSubscription) => { }
+                 , (subscription, reason, exception) =>
+                 {
+                     if(null != exception) obs.OnError(exception);
+                     else
+                     {
+                         obs.OnError(new Exception($"{reason}"));
+                     }
+                 });
 
-        public void Dispose()
-        {
-            _eventStoreConnection.Close();
-            _connectionMonitor.Dispose();
+                return Disposable.Create(() =>
+                {
+                    catchUpSubscription.Stop();
+                });
+
+            }
+            else
+            {
+                var eventStoreSubscription = await _eventStoreConnection.SubscribeToStreamAsync(streamId, true, (subscription, resolvedEvent) =>
+                {
+                    var @event = DeserializeEvent(resolvedEvent.Event);
+
+                    obs.OnNext(@event);
+
+                }, (subscription, reason, exception) =>
+                {
+                    if (null != exception) obs.OnError(exception);
+                    else
+                    {
+                        obs.OnError(new Exception($"{reason}"));
+                    }
+                });
+
+                return Disposable.Create(() =>
+                {
+                    eventStoreSubscription.Close();
+                });
+            }
+
         }
 
         private Type GetEventType(string type)
@@ -201,7 +228,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return new EventData(eventId, typeName, true, data, metadata);
         }
 
-        protected virtual IDictionary<string, string> GetCommitHeaders()
+        private IDictionary<string, string> GetCommitHeaders()
         {
             var commitId = Guid.NewGuid();
 
@@ -213,6 +240,13 @@ namespace ActorPlayground.Orleans.Basics.EventStore
                 {MetadataKeys.ServerClockHeader, DateTime.UtcNow.ToString("o")}
             };
         }
+
+        public void Dispose()
+        {
+            _eventStoreConnection.Close();
+            _connectionMonitor.Dispose();
+        }
+
 
     }
 }
