@@ -7,6 +7,7 @@ using Orleans.Providers.Streams.Common;
 using Orleans.Runtime;
 using Orleans.Streams;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,34 +16,29 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 {
     public class EventStoreAdapterFactory : IQueueAdapterFactory
     {
-        private readonly IEventStoreRepositoryConfiguration _repositoryConfiguration;
+        private readonly IEventStoreRepositoryConfiguration _eventStoreRepositoryConfiguration;
         private readonly ILoggerFactory _loggerFactory;
         private readonly IStreamQueueMapper _streamQueueMapper;
         private readonly string _providerName;
-        private readonly SimpleQueueAdapterCache _eventStoreQueueAdapterCache;
+        private readonly EventStoreQueueAdapterCache _eventStoreQueueAdapterCache;
+        private readonly ConcurrentDictionary<QueueId, EventStoreQueueAdapterReceiver> _receivers;
 
         public static EventStoreAdapterFactory Create(IServiceProvider services, string name)
         {
             var repositoryConfiguration = services.GetOptionsByName<EventStoreRepositoryConfiguration>(name);
-            var cacheOptions = services.GetOptionsByName<SimpleQueueCacheOptions>(name);
 
-            return ActivatorUtilities.CreateInstance<EventStoreAdapterFactory>(
-                services,
-                name,
-                repositoryConfiguration,
-                cacheOptions);
+            return ActivatorUtilities.CreateInstance<EventStoreAdapterFactory>(services, name, repositoryConfiguration);
         }
 
-        public EventStoreAdapterFactory(string providerName, 
-            IEventStoreRepositoryConfiguration repositoryConfiguration, 
-            SimpleQueueCacheOptions simpleQueueCacheOptions, 
-            ILoggerFactory loggerFactory)
+        public EventStoreAdapterFactory(string providerName, IEventStoreRepositoryConfiguration repositoryConfiguration, ILoggerFactory loggerFactory)
         {
-            _repositoryConfiguration = repositoryConfiguration;
+            _eventStoreRepositoryConfiguration = repositoryConfiguration;
             _loggerFactory = loggerFactory;
             _providerName = providerName;
 
-            _eventStoreQueueAdapterCache = new SimpleQueueAdapterCache(simpleQueueCacheOptions, providerName, loggerFactory);
+            _receivers = new ConcurrentDictionary<QueueId, EventStoreQueueAdapterReceiver>();
+
+            _eventStoreQueueAdapterCache = new EventStoreQueueAdapterCache(this, loggerFactory);
 
             var hashRingStreamQueueMapperOptions = new HashRingStreamQueueMapperOptions() { TotalQueueCount = 1 };
             _streamQueueMapper = new HashRingBasedStreamQueueMapper(hashRingStreamQueueMapperOptions, _providerName);
@@ -51,8 +47,18 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public Task<IQueueAdapter> CreateAdapter()
         {
-            var adpter = new EventStoreQueueAdapter(_providerName, _repositoryConfiguration, _loggerFactory);
+            var adpter = new EventStoreQueueAdapter(_providerName, _eventStoreRepositoryConfiguration, _loggerFactory);
             return Task.FromResult<IQueueAdapter>(adpter);
+        }
+
+        public IQueueAdapterReceiver CreateReceiver(QueueId queueId)
+        {
+            return _receivers.GetOrAdd(queueId, ConstructReceiver);
+        }
+
+        private EventStoreQueueAdapterReceiver ConstructReceiver(QueueId queueId)
+        {
+            return (EventStoreQueueAdapterReceiver)EventStoreQueueAdapterReceiver.Create(_eventStoreRepositoryConfiguration, _loggerFactory, queueId, _providerName);
         }
 
         public Task<IStreamFailureHandler> GetDeliveryFailureHandler(QueueId queueId)

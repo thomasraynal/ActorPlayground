@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
 using Orleans.Streams;
+using System.Linq;
 
 namespace ActorPlayground.Orleans.Basics
 {
@@ -22,17 +23,17 @@ namespace ActorPlayground.Orleans.Basics
         private const string serviceId = "OrleansCcyPairs";
         private EmbeddedEventStoreFixture _embeddedEventStore;
 
-        [SetUp]
+        [OneTimeSetUp]
         public async Task SetupFixture()
         {
-            //_embeddedEventStore = new EmbeddedEventStoreFixture();
-            //await _embeddedEventStore.Initialize();
+            _embeddedEventStore = new EmbeddedEventStoreFixture();
+            await _embeddedEventStore.Initialize();
         }
 
-        [TearDown]
+        [OneTimeTearDown]
         public async Task TearDown()
         {
-            //await _embeddedEventStore.Dispose();
+            await _embeddedEventStore.Dispose();
         }
 
         private async Task<ISiloHost> CreateSilo(CancellationToken cancel)
@@ -43,7 +44,7 @@ namespace ActorPlayground.Orleans.Basics
                                 .AddMemoryGrainStorage("CcyPairStorage")
                                 .AddMemoryGrainStorage("AsyncStreamHandlerStorage")
                                 .AddMemoryGrainStorage("PubSubStore")
-                                .AddEventStoreStreamProvider("EventStoreStreamProvider")
+                                .AddEventStoreStreamProvider("EventStore")
                                 .UseLocalhostClustering()
                                 .Configure<ClusterOptions>(options =>
                                 {
@@ -69,7 +70,7 @@ namespace ActorPlayground.Orleans.Basics
 
             var client = new ClientBuilder()
                                         .UseLocalhostClustering()
-                                        .AddEventStoreStreamProvider("EventStoreStreamProvider")
+                                        .AddEventStoreStreamProvider("EventStore")
                                         .Configure<ClusterOptions>(options =>
                                         {
                                             options.ClusterId = "dev";
@@ -82,10 +83,37 @@ namespace ActorPlayground.Orleans.Basics
             return client;
         }
 
-
-        public class TestObserver<T> : IAsyncObserver<T>
+        public interface ITestObserver : IGrainWithGuidKey
         {
-            public List<T> Events = new List<T>();
+            Task Publish();
+            Task<int> GetEventCounts();
+        }
+
+        public class TestObserver : Grain, IAsyncObserver<IEvent>, ITestObserver
+        {
+            public List<IEvent> Events = new List<IEvent>();
+            private IStreamProvider _streamProvider;
+            private IAsyncStream<IEvent> _euroDolStream;
+
+            public async override Task OnActivateAsync()
+            {
+                _streamProvider = this.GetStreamProvider("EventStore");
+
+                _euroDolStream = _streamProvider.GetStream<IEvent>(Guid.Empty, "EUR/USD");
+
+                var subscription = await _euroDolStream.SubscribeAsync(this);
+
+            }
+
+            public Task<int> GetEventCounts()
+            {
+                return Task.FromResult(Events.Count);
+            }
+
+            public async Task Publish()
+            {
+                await _euroDolStream.OnNextAsync(new ChangeCcyPairPrice("EUR/USD", "Harmony1", 1.32, 1.34));
+            }
 
             public Task OnCompletedAsync()
             {
@@ -97,7 +125,7 @@ namespace ActorPlayground.Orleans.Basics
                 return Task.CompletedTask;
             }
 
-            public Task OnNextAsync(T item, StreamSequenceToken token = null)
+            public Task OnNextAsync(IEvent item, StreamSequenceToken token = null)
             {
                 Events.Add(item);
 
@@ -105,22 +133,26 @@ namespace ActorPlayground.Orleans.Basics
             }
         }
 
+
         [Test]
-        public async Task ShouldGetStreamProvider()
+        public async Task ShouldWriteAndReadFromStream()
         {
             var cancel = new CancellationTokenSource();
 
             var silo = await CreateSilo(cancel.Token);
             var client = await GetClient();
 
-            var observer = new TestObserver<IEvent>();
+            var observer = client.GetGrain<ITestObserver>(Guid.NewGuid());
 
-            var streamProvider = client.GetStreamProvider("EventStoreStreamProvider");
-   
-            var euroDolStream = await streamProvider.GetStream<IEvent>(Guid.Empty, "USD/EUR")
-                                        .SubscribeAsync(observer);
+            await observer.Publish();
+            await observer.Publish();
+            await observer.Publish();
+            await observer.Publish();
 
-            Assert.IsNotNull(euroDolStream);
+            await Task.Delay(1000);
+
+
+            var count = await observer.GetEventCounts();
 
             cancel.Cancel();
             await silo.StopAsync();

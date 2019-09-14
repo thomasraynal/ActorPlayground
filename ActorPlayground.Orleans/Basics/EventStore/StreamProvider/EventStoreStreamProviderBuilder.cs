@@ -35,10 +35,9 @@ namespace ActorPlayground.Orleans.Basics.EventStore
                     services
                         .ConfigureNamedOptionForLogging<EventStoreRepositoryConfiguration>(providerName)
                         .ConfigureNamedOptionForLogging<HashRingStreamQueueMapperOptions>(providerName);
-                    
+
                 })
-                .AddPersistentStreams(providerName, EventStoreAdapterFactory.Create, stream => stream.Configure(configureOptions))
-                .Configure<SimpleQueueCacheOptions>(ob => ob.CacheSize = DefaultCacheSize);
+                .AddPersistentStreams(providerName, EventStoreAdapterFactory.Create, stream => stream.Configure(configureOptions));
 
             return builder;
         }
@@ -54,8 +53,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
                         .ConfigureNamedOptionForLogging<HashRingStreamQueueMapperOptions>(providerName);
 
                 })
-                .AddPersistentStreams(providerName, EventStoreAdapterFactory.Create, stream => stream.Configure(configureOptions))
-                .Configure<SimpleQueueCacheOptions>(options => options.CacheSize = DefaultCacheSize);
+                .AddPersistentStreams(providerName, EventStoreAdapterFactory.Create, stream => stream.Configure(configureOptions));
 
             return builder;
         }

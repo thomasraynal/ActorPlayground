@@ -13,21 +13,21 @@ namespace ActorPlayground.Orleans.Basics.EventStore
     {
         private readonly IEventStoreRepositoryConfiguration _eventStoreRepositoryConfiguration;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly string _providerName;
         private readonly EventStoreRepository _eventStoreRepository;
 
         public EventStoreQueueAdapter(string providerName, IEventStoreRepositoryConfiguration eventStoreRepositoryConfiguration, ILoggerFactory loggerFactory)
         {
             _eventStoreRepositoryConfiguration = eventStoreRepositoryConfiguration;
             _loggerFactory = loggerFactory;
-            _providerName = providerName;
+
+            Name = providerName;
 
             //todo: use 2 repository (queue adpater + receiver)
             //todo: dispose
             _eventStoreRepository = EventStoreRepository.Create(eventStoreRepositoryConfiguration);
         }
 
-        public string Name { get; private set; }
+        public string Name { get; }
 
         public bool IsRewindable => true;
 
@@ -35,7 +35,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public IQueueAdapterReceiver CreateReceiver(QueueId queueId)
         {
-            return EventStoreAdapterReceiver.Create(_eventStoreRepositoryConfiguration, _loggerFactory, queueId, Name);
+            return EventStoreQueueAdapterReceiver.Create(_eventStoreRepositoryConfiguration, _loggerFactory, queueId, Name);
         }
 
         public async Task QueueMessageBatchAsync<T>(Guid streamGuid, string streamNamespace, IEnumerable<T> events, StreamSequenceToken token, Dictionary<string, object> requestContext)
