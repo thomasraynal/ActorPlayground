@@ -10,16 +10,15 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 {
     public static class EventStoreStreamProviderBuilder
     {
-        private const int DefaultCacheSize = 4096;
 
-        public static IClientBuilder AddEventStoreStreamProvider(this IClientBuilder builder, string providerName, Action<EventStoreRepositoryConfiguration> configureOptions = null)
+        public static IClientBuilder AddEventStorePersistentStream(this IClientBuilder builder, string providerName, Action<EventStoreRepositoryConfiguration> configureOptions = null)
         {
             if (null == configureOptions) configureOptions = (_) => { };
 
             return AddClientProvider(builder, providerName, opt => opt.Configure(configureOptions));
         }
 
-        public static ISiloHostBuilder AddEventStoreStreamProvider(this ISiloHostBuilder builder, string providerName, Action<EventStoreRepositoryConfiguration> configureOptions = null)
+        public static ISiloHostBuilder AddEventStorePersistentStream(this ISiloHostBuilder builder, string providerName, Action<EventStoreRepositoryConfiguration> configureOptions = null)
         {
             if (null == configureOptions) configureOptions = (_) => { };
 

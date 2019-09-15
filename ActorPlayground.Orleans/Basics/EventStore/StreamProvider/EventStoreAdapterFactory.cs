@@ -40,7 +40,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
             _eventStoreQueueAdapterCache = new EventStoreQueueAdapterCache(this, loggerFactory);
 
-            var hashRingStreamQueueMapperOptions = new HashRingStreamQueueMapperOptions() { TotalQueueCount = 1 };
+            var hashRingStreamQueueMapperOptions = new HashRingStreamQueueMapperOptions() { TotalQueueCount = 2 };
             _streamQueueMapper = new HashRingBasedStreamQueueMapper(hashRingStreamQueueMapperOptions, _providerName);
 
         }
@@ -49,16 +49,6 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         {
             var adpter = new EventStoreQueueAdapter(_providerName, _eventStoreRepositoryConfiguration, _loggerFactory);
             return Task.FromResult<IQueueAdapter>(adpter);
-        }
-
-        public IQueueAdapterReceiver CreateReceiver(QueueId queueId)
-        {
-            return _receivers.GetOrAdd(queueId, ConstructReceiver);
-        }
-
-        private EventStoreQueueAdapterReceiver ConstructReceiver(QueueId queueId)
-        {
-            return (EventStoreQueueAdapterReceiver)EventStoreQueueAdapterReceiver.Create(_eventStoreRepositoryConfiguration, _loggerFactory, queueId, _providerName);
         }
 
         public Task<IStreamFailureHandler> GetDeliveryFailureHandler(QueueId queueId)

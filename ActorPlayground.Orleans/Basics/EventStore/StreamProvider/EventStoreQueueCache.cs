@@ -10,44 +10,17 @@ using System.Threading;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
-    //public class EventStoreQueueCache : SimpleQueueCache, IQueueCache
-    //{
-    //    private readonly EventStoreQueueAdapterReceiver _receiver;
-
-    //    public EventStoreQueueCache(int cacheSize, ILogger logger,EventStoreQueueAdapterReceiver receiver)
-    //        : base(cacheSize, logger)
-    //    {
-    //        _receiver = receiver;
-    //    }
-
-    //    public override void AddToCache(IList<IBatchContainer> msgs)
-    //    {
-    //        msgs = msgs.OfType<EventStoreBatchContainer>().Cast<IBatchContainer>().ToList();
-
-    //        base.AddToCache(msgs);
-    //    }
-
-    //    public override IQueueCacheCursor GetCacheCursor(IStreamIdentity streamIdentity, StreamSequenceToken token)
-    //    {
-    //        _receiver.SubscribeTo(streamIdentity.Namespace, token as EventSequenceToken);
-    //        return base.GetCacheCursor(streamIdentity, token);
-    //    }
-
-
-    //}
 
     public class EventStoreQueueCache :  IQueueCache
     {
         private readonly ConcurrentDictionary<(Guid, string), ConcurrentQueue<EventStoreBatchContainer>> _cache;
         private readonly ConcurrentQueue<IBatchContainer> _itemsToPurge;
         private readonly int _maxCacheSize;
-        private readonly EventStoreQueueAdapterReceiver _receiver;
         private int _numItemsInCache;
 
-        public EventStoreQueueCache(int cacheSize, EventStoreQueueAdapterReceiver receiver)
+        public EventStoreQueueCache(int cacheSize)
         {
             _maxCacheSize = cacheSize;
-            _receiver = receiver;
             _cache = new ConcurrentDictionary<(Guid, string), ConcurrentQueue<EventStoreBatchContainer>>();
             _itemsToPurge = new ConcurrentQueue<IBatchContainer>();
         }
@@ -96,8 +69,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public IQueueCacheCursor GetCacheCursor(IStreamIdentity streamIdentity, StreamSequenceToken token)
         {
-            _receiver.CreateSubscription(streamIdentity, token as EventSequenceToken);
-
+    
             return new ConcurrentQueueCacheCursor(() =>
             {
                 if (_cache.TryGetValue((streamIdentity.Guid, streamIdentity.Namespace), out ConcurrentQueue<EventStoreBatchContainer> concurrentQueue))

@@ -24,9 +24,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         {
             return _queueCaches.GetOrAdd(queueId, (queue) =>
             {
-                var receiver = (EventStoreQueueAdapterReceiver)_adapterFactory.CreateReceiver(queue);
-                return new EventStoreQueueCache(100, receiver);
-
+                return new EventStoreQueueCache(100);
             });
         }
 

@@ -1,4 +1,5 @@
 ﻿using EventStore.ClientAPI;
+using Orleans.Providers.Streams.Common;
 using Orleans.Streams;
 using System;
 using System.Collections.Generic;
@@ -11,21 +12,21 @@ namespace ActorPlayground.Orleans.Basics.EventStore
     {
         public Guid StreamGuid { get; }
         public string StreamNamespace { get; }
-        public StreamSequenceToken SequenceToken { get; }
+
         public IEvent Event { get; }
 
-        public EventStoreBatchContainer(Guid streamGuid, string streamNamespace, StreamSequenceToken sequenceToken, IEvent @event)
+        public StreamSequenceToken SequenceToken => null;
+
+        public EventStoreBatchContainer(Guid streamGuid, string streamNamespace, IEvent @event)
         {
             Event = @event;
             StreamGuid = streamGuid;
             StreamNamespace = streamNamespace;
-            SequenceToken = sequenceToken;
         }
 
         public IEnumerable<Tuple<T, StreamSequenceToken>> GetEvents<T>()
         {
-            //todo : agnostic eventstore repository
-            yield return new Tuple<T, StreamSequenceToken>((T)Event, SequenceToken);
+            yield return new Tuple<T, StreamSequenceToken>((T)Event, null);
         }
 
         public bool ImportRequestContext()

@@ -14,6 +14,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Orleans.Streams;
 using System.Linq;
+using EventStore.ClientAPI;
+using System.Net;
+using EventStore.ClientAPI.SystemData;
 
 namespace ActorPlayground.Orleans.Basics
 {
@@ -21,6 +24,10 @@ namespace ActorPlayground.Orleans.Basics
     public class TestsEventStoreStreamProvider
     {
         private const string serviceId = "OrleansCcyPairs";
+        private const string euroDolStream = "EUR/USD";
+        private const string euroJpyStream = "EUR/JPY";
+        private const string harmonyMarket = "Harmony";
+        private const string fxConnectMarket = "fxConnect";
         private EmbeddedEventStoreFixture _embeddedEventStore;
 
         [OneTimeSetUp]
@@ -28,12 +35,30 @@ namespace ActorPlayground.Orleans.Basics
         {
             _embeddedEventStore = new EmbeddedEventStoreFixture();
             await _embeddedEventStore.Initialize();
+
+            await CreateSubscription(euroDolStream, harmonyMarket);
+            await CreateSubscription(euroDolStream, fxConnectMarket);
+            await CreateSubscription(euroJpyStream, harmonyMarket);
+            await CreateSubscription(euroJpyStream, fxConnectMarket);
         }
 
         [OneTimeTearDown]
         public async Task TearDown()
         {
             await _embeddedEventStore.Dispose();
+        }
+
+        private async Task CreateSubscription(string stream, string group)
+        {
+            var persistentSubscriptionSettings = PersistentSubscriptionSettings.Create().DoNotResolveLinkTos().StartFromCurrent();
+            var connectionSettings = ConnectionSettings.Create();
+            var userCredentials = new UserCredentials("admin", "changeit");
+
+            using (var connection = EventStoreConnection.Create(connectionSettings, EventStoreRepositoryConfiguration.Default.ConnectionString))
+            {
+                await connection.CreatePersistentSubscriptionAsync(stream, group, persistentSubscriptionSettings, userCredentials);
+            }
+
         }
 
         private async Task<ISiloHost> CreateSilo(CancellationToken cancel)
@@ -44,7 +69,8 @@ namespace ActorPlayground.Orleans.Basics
                                 .AddMemoryGrainStorage("CcyPairStorage")
                                 .AddMemoryGrainStorage("AsyncStreamHandlerStorage")
                                 .AddMemoryGrainStorage("PubSubStore")
-                                .AddEventStoreStreamProvider("EventStore")
+                                .AddEventStorePersistentStream(euroDolStream)
+                                .AddEventStorePersistentStream(euroJpyStream)
                                 .UseLocalhostClustering()
                                 .Configure<ClusterOptions>(options =>
                                 {
@@ -70,7 +96,8 @@ namespace ActorPlayground.Orleans.Basics
 
             var client = new ClientBuilder()
                                         .UseLocalhostClustering()
-                                        .AddEventStoreStreamProvider("EventStore")
+                                        .AddEventStorePersistentStream(euroDolStream)
+                                        .AddEventStorePersistentStream(euroJpyStream)
                                         .Configure<ClusterOptions>(options =>
                                         {
                                             options.ClusterId = "dev";
@@ -97,9 +124,9 @@ namespace ActorPlayground.Orleans.Basics
 
             public async override Task OnActivateAsync()
             {
-                _streamProvider = this.GetStreamProvider("EventStore");
+                _streamProvider = this.GetStreamProvider(euroDolStream);
 
-                _euroDolStream = _streamProvider.GetStream<IEvent>(Guid.Empty, "EUR/USD");
+                _euroDolStream = _streamProvider.GetStream<IEvent>(Guid.Empty, "Harmony");
 
                 var subscription = await _euroDolStream.SubscribeAsync(this);
 
@@ -112,7 +139,7 @@ namespace ActorPlayground.Orleans.Basics
 
             public async Task Publish()
             {
-                await _euroDolStream.OnNextAsync(new ChangeCcyPairPrice("EUR/USD", "Harmony1", 1.32, 1.34));
+                await _euroDolStream.OnNextAsync(new ChangeCcyPairPrice("EUR/USD", "Harmony", 1.32, 1.34));
             }
 
             public Task OnCompletedAsync()
@@ -149,8 +176,7 @@ namespace ActorPlayground.Orleans.Basics
             await observer.Publish();
             await observer.Publish();
 
-            await Task.Delay(1000);
-
+            await Task.Delay(2000);
 
             var count = await observer.GetEventCounts();
 

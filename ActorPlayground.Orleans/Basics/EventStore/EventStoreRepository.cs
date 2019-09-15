@@ -1,4 +1,5 @@
 ﻿using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using MoreLinq;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
     public class EventStoreRepository : IEventStoreRepository
     {
         private readonly IEventStoreConnection _eventStoreConnection;
-        private readonly IEventStoreRepositoryConfiguration _configuration;
+        private readonly IEventStoreRepositoryConfiguration _eventStoreRepositoryConfiguration;
         private readonly Dictionary<string, Type> _eventTypeCache;
         private readonly IConnectionStatusMonitor _connectionMonitor;
         private bool _isStarted;
@@ -25,13 +26,12 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         {
             var eventStoreConnection = new ExternalEventStore(repositoryConfiguration.ConnectionString, repositoryConfiguration.ConnectionSettings).Connection;
             var repository = new EventStoreRepository(repositoryConfiguration, eventStoreConnection, new ConnectionStatusMonitor(eventStoreConnection));
-
             return repository;
         }
 
         private EventStoreRepository(IEventStoreRepositoryConfiguration configuration, IEventStoreConnection eventStoreConnection, IConnectionStatusMonitor connectionMonitor)
         {
-            _configuration = configuration;
+            _eventStoreRepositoryConfiguration = configuration;
             _eventStoreConnection = eventStoreConnection;
             _eventTypeCache = new Dictionary<string, Type>();
             _connectionMonitor = connectionMonitor;
@@ -45,6 +45,42 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
             await _connectionMonitor.Connect();
             await Wait.Until(() => IsConnected, timeout);
+        }
+
+        public IObservable<IEvent> ObservePersistentSubscription(string streamId, string group)
+        {
+            return CreateEventStorePersistentSubscription(streamId, group)
+                    .TakeUntil((_) => !IsConnected)
+                    .Retry();
+        }
+
+        private IObservable<IEvent> CreateEventStorePersistentSubscription(string streamId, string group)
+        {
+            return Observable.Create<IEvent>(async (obs) =>
+            {
+                var persistentSubscription = await _eventStoreConnection.ConnectToPersistentSubscriptionAsync(streamId, group, (eventStoreSubscription, resolvedEvent) =>
+                {
+                    var @event = DeserializeEvent(resolvedEvent.Event);
+
+                    obs.OnNext(@event);
+
+                }, (subscription, reason, exception) =>
+                {
+
+                    if (null != exception) obs.OnError(exception);
+                    else
+                    {
+                        obs.OnError(new Exception($"{reason}"));
+                    }
+
+                }, _eventStoreRepositoryConfiguration.UserCredentials, _eventStoreRepositoryConfiguration.BufferSize, _eventStoreRepositoryConfiguration.AutoAck);
+
+                return Disposable.Create(() =>
+                {
+                    persistentSubscription.Stop(_eventStoreRepositoryConfiguration.ConnectionClosedTimeout);
+                });
+
+            });
         }
 
         public IObservable<IEvent> Observe(string streamId, long? fromIncluding = null, bool rewindAfterDisconnection = false)
@@ -68,7 +104,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
             do
             {
-                currentSlice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, eventNumber, _configuration.ReadPageSize, false);
+                currentSlice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, eventNumber, _eventStoreRepositoryConfiguration.ReadPageSize, false);
 
                 if (currentSlice.Status == SliceReadStatus.StreamNotFound || currentSlice.Status == SliceReadStatus.StreamDeleted)
                 {
@@ -157,7 +193,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
                 return Disposable.Create(() =>
                 {
-                    catchUpSubscription.Stop();
+                    catchUpSubscription.Stop(_eventStoreRepositoryConfiguration.ConnectionClosedTimeout);
                 });
 
             }
@@ -198,12 +234,12 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         private IEvent DeserializeEvent(RecordedEvent evt)
         {
-            return _configuration.Serializer.DeserializeObject(evt.Data, GetEventType(evt.EventType)) as IEvent;
+            return _eventStoreRepositoryConfiguration.Serializer.DeserializeObject(evt.Data, GetEventType(evt.EventType)) as IEvent;
         }
 
         private IList<IList<EventData>> GetEventBatches(IEnumerable<EventData> events)
         {
-            return events.Batch(_configuration.WritePageSize).Select(x => (IList<EventData>)x.ToList()).ToList();
+            return events.Batch(_eventStoreRepositoryConfiguration.WritePageSize).Select(x => (IList<EventData>)x.ToList()).ToList();
         }
 
         private IDictionary<string, string> CreateCommitHeaders(KeyValuePair<string, string>[] extraHeaders)
@@ -221,14 +257,14 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         private EventData ToEventData(IEvent @event, IDictionary<string, string> headers)
         {
             var eventId = Guid.NewGuid();
-            var data = _configuration.Serializer.SerializeObject(@event);
+            var data = _eventStoreRepositoryConfiguration.Serializer.SerializeObject(@event);
 
             var eventHeaders = new Dictionary<string, string>(headers)
             {
                 {MetadataKeys.EventClrTypeHeader, @event.GetType().AssemblyQualifiedName}
             };
 
-            var metadata = _configuration.Serializer.SerializeObject(eventHeaders);
+            var metadata = _eventStoreRepositoryConfiguration.Serializer.SerializeObject(eventHeaders);
             var typeName = @event.GetType().ToString();
 
             return new EventData(eventId, typeName, true, data, metadata);

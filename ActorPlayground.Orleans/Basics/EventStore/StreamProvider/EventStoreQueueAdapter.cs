@@ -13,40 +13,41 @@ namespace ActorPlayground.Orleans.Basics.EventStore
     {
         private readonly IEventStoreRepositoryConfiguration _eventStoreRepositoryConfiguration;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly EventStoreRepository _eventStoreRepository;
 
-        public EventStoreQueueAdapter(string providerName, IEventStoreRepositoryConfiguration eventStoreRepositoryConfiguration, ILoggerFactory loggerFactory)
+        public EventStoreQueueAdapter(string providerName,
+            IEventStoreRepositoryConfiguration eventStoreRepositoryConfiguration,
+            ILoggerFactory loggerFactory)
         {
             _eventStoreRepositoryConfiguration = eventStoreRepositoryConfiguration;
             _loggerFactory = loggerFactory;
 
             Name = providerName;
 
-            //todo: use 2 repository (queue adpater + receiver)
-            //todo: dispose
-            _eventStoreRepository = EventStoreRepository.Create(eventStoreRepositoryConfiguration);
+            EventStore = EventStoreRepository.Create(eventStoreRepositoryConfiguration);
         }
 
         public string Name { get; }
 
         public bool IsRewindable => true;
 
+        public IEventStoreRepository EventStore { get; }
+
         public StreamProviderDirection Direction => StreamProviderDirection.ReadWrite;
 
         public IQueueAdapterReceiver CreateReceiver(QueueId queueId)
         {
-            return EventStoreQueueAdapterReceiver.Create(_eventStoreRepositoryConfiguration, _loggerFactory, queueId, Name);
+            return EventStoreQueueAdapterReceiver.Create(EventStore, _loggerFactory, queueId, Name);
         }
 
         public async Task QueueMessageBatchAsync<T>(Guid streamGuid, string streamNamespace, IEnumerable<T> events, StreamSequenceToken token, Dictionary<string, object> requestContext)
         {
-            if (!_eventStoreRepository.IStarted)
+
+            if (!EventStore.IStarted)
             {
-                await _eventStoreRepository.Connect(TimeSpan.FromSeconds(5));
+                await EventStore.Connect(TimeSpan.FromSeconds(5));
             }
 
-            //handle failure not connected
-            await _eventStoreRepository.SavePendingEvents(streamNamespace, ExpectedVersion.Any, events.Cast<IEvent>());
+            await EventStore.SavePendingEvents(Name, ExpectedVersion.Any, events.Cast<IEvent>());
 
         }
     }

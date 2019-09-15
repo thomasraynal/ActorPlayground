@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
-    public interface IEventStoreRepositoryConfiguration
+    public interface IEventStoreRepositoryConfiguration : IEventStorePersistentSubscriptionConfiguration
     {
         int WritePageSize { get; }
         int ReadPageSize { get; }
