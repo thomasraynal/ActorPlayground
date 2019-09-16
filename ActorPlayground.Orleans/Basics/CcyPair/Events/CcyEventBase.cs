@@ -15,6 +15,6 @@ namespace ActorPlayground.Orleans.Basics
             StreamId = ccyPair;
         }
 
-        public string StreamId { get; internal set; }
+        public string StreamId { get;  set; }
     }
 }

@@ -15,11 +15,13 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public IEvent Event { get; }
 
-        public StreamSequenceToken SequenceToken => null;
+        public EventStoreStreamSequenceToken EventStoreStreamSequenceToken { get; }
+        public StreamSequenceToken SequenceToken => EventStoreStreamSequenceToken as StreamSequenceToken;
 
-        public EventStoreBatchContainer(Guid streamGuid, string streamNamespace, IEvent @event)
+        public EventStoreBatchContainer(Guid streamGuid, string streamNamespace, IEvent @event, EventStoreStreamSequenceToken eventStoreStreamSequenceToken )
         {
             Event = @event;
+            EventStoreStreamSequenceToken = eventStoreStreamSequenceToken;
             StreamGuid = streamGuid;
             StreamNamespace = streamNamespace;
         }

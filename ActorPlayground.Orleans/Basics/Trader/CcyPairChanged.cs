@@ -13,10 +13,10 @@ namespace ActorPlayground.Orleans.Basics
             Ask = ask;
             Bid = bid;
             Date = DateTime.Now;
-            Market = market;
+            Group = market;
         }
 
-        public string Market { get; }
+        public string Group { get; }
 
         public string StreamId { get;  }
 

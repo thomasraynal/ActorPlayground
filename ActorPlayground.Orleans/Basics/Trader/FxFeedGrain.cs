@@ -43,7 +43,7 @@ namespace ActorPlayground.Orleans.Basics
                 _ccyPairs[@event.StreamId] = GrainFactory.GetGrain<ICcyPairGrain>(@event.StreamId);
             }
 
-            _ccyPairs[@event.StreamId].Tick(@event.Market, @event.Ask, @event.Bid);
+            _ccyPairs[@event.StreamId].Tick(@event.Group, @event.Ask, @event.Bid);
 
             return Task.CompletedTask;
         }

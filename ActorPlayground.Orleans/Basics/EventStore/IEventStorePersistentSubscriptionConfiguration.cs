@@ -10,5 +10,6 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         UserCredentials UserCredentials { get; }
         int BufferSize { get; }
         bool AutoAck { get; }
+        TimeSpan ConnectionClosedTimeout { get; }
     }
 }

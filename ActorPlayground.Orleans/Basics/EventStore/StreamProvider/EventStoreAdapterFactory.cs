@@ -16,7 +16,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 {
     public class EventStoreAdapterFactory : IQueueAdapterFactory
     {
-        private readonly IEventStoreRepositoryConfiguration _eventStoreRepositoryConfiguration;
+        private readonly IEventStoreRepositoryConfiguration _streamProviderConfiguration;
         private readonly ILoggerFactory _loggerFactory;
         private readonly IStreamQueueMapper _streamQueueMapper;
         private readonly string _providerName;
@@ -25,14 +25,14 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public static EventStoreAdapterFactory Create(IServiceProvider services, string name)
         {
-            var repositoryConfiguration = services.GetOptionsByName<EventStoreRepositoryConfiguration>(name);
+            var streamProviderConfiguration = services.GetOptionsByName<EventStoreStreamProviderConfiguration>(name);
 
-            return ActivatorUtilities.CreateInstance<EventStoreAdapterFactory>(services, name, repositoryConfiguration);
+            return ActivatorUtilities.CreateInstance<EventStoreAdapterFactory>(services, name, streamProviderConfiguration);
         }
 
-        public EventStoreAdapterFactory(string providerName, IEventStoreRepositoryConfiguration repositoryConfiguration, ILoggerFactory loggerFactory)
+        public EventStoreAdapterFactory(string providerName, IEventStoreStreamProviderConfiguration streamProviderConfiguration, ILoggerFactory loggerFactory)
         {
-            _eventStoreRepositoryConfiguration = repositoryConfiguration;
+            _streamProviderConfiguration = streamProviderConfiguration;
             _loggerFactory = loggerFactory;
             _providerName = providerName;
 
@@ -47,8 +47,8 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
         public Task<IQueueAdapter> CreateAdapter()
         {
-            var adpter = new EventStoreQueueAdapter(_providerName, _eventStoreRepositoryConfiguration, _loggerFactory);
-            return Task.FromResult<IQueueAdapter>(adpter);
+            var adapter = new EventStoreQueueAdapter(_providerName, _streamProviderConfiguration, _loggerFactory);
+            return Task.FromResult<IQueueAdapter>(adapter);
         }
 
         public Task<IStreamFailureHandler> GetDeliveryFailureHandler(QueueId queueId)

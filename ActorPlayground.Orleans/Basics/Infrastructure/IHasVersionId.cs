@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public interface IHasGroupId
+    public interface IHasVersionId
     {
-        string GroupId { get; }
+        long Version { get; set; }
     }
 }

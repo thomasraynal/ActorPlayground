@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ActorPlayground.Orleans.Basics
 {
-    public interface IEventWithGroupId: IEvent, IHasGroupId
+    public interface IEventWithVersionId : IHasVersionId, IEvent
     {
     }
 }

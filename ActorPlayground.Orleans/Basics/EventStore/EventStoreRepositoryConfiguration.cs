@@ -6,6 +6,7 @@ using EventStore.ClientAPI.SystemData;
 
 namespace ActorPlayground.Orleans.Basics.EventStore
 {
+    //todo persistent subscription provider
     public class EventStoreRepositoryConfiguration : IEventStoreRepositoryConfiguration
     {
         public static readonly EventStoreRepositoryConfiguration Default = new EventStoreRepositoryConfiguration();
@@ -18,5 +19,6 @@ namespace ActorPlayground.Orleans.Basics.EventStore
         public UserCredentials UserCredentials { get; set; } = new UserCredentials("admin", "changeit");
         public int BufferSize { get; set; } = 10;
         public bool AutoAck { get; set; } = true;
+        public TimeSpan ConnectionClosedTimeout { get; set; } = TimeSpan.FromSeconds(30);
     }
 }

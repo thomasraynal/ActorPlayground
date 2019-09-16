@@ -18,8 +18,8 @@ namespace ActorPlayground.Orleans.Basics
             Market = market;
         }
 
-        public double Ask { get; internal set; }
-        public double Bid { get; internal set; }
-        public string Market { get; internal set; }
+        public double Ask { get;  set; }
+        public double Bid { get;  set; }
+        public string Market { get;  set; }
     }
 }

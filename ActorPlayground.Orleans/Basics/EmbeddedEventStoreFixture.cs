@@ -43,7 +43,7 @@ namespace ActorPlayground.Orleans.Basics
 
             if (sysInfo.OSType != "linux")
             {
-                _eventStoreImage = "idubnori/eventstore:4.1.1-hotfix1-windowsservercore";
+                _eventStoreImage = "eventstore/eventstore";
             }
 
             var images = await this.Client.Images.ListImagesAsync(new ImagesListParameters { MatchName = _eventStoreImage });

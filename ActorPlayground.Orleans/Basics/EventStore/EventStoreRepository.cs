@@ -47,20 +47,33 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             await Wait.Until(() => IsConnected, timeout);
         }
 
-        public IObservable<IEvent> ObservePersistentSubscription(string streamId, string group)
+        public async Task CreatePersistentSubscription(string streamId, string group)
         {
-            return CreateEventStorePersistentSubscription(streamId, group)
+ 
+            var persistentSubscriptionSettings = PersistentSubscriptionSettings.Create().DoNotResolveLinkTos().StartFromCurrent();
+
+            await _eventStoreConnection.CreatePersistentSubscriptionAsync(streamId, group, persistentSubscriptionSettings, _eventStoreRepositoryConfiguration.UserCredentials);
+
+        }
+
+        public IObservable<IEventWithVersionId> ObservePersistentSubscription(string streamId, string group)
+        {
+            return SubscribeToPersistentSubscription(streamId, group)
                     .TakeUntil((_) => !IsConnected)
                     .Retry();
         }
 
-        private IObservable<IEvent> CreateEventStorePersistentSubscription(string streamId, string group)
+        //todo: handle ack
+        //todo: check arguments
+        private IObservable<IEventWithVersionId> SubscribeToPersistentSubscription(string streamId, string group)
         {
-            return Observable.Create<IEvent>(async (obs) =>
+            return Observable.Create<IEventWithVersionId>(async (obs) =>
             {
                 var persistentSubscription = await _eventStoreConnection.ConnectToPersistentSubscriptionAsync(streamId, group, (eventStoreSubscription, resolvedEvent) =>
                 {
-                    var @event = DeserializeEvent(resolvedEvent.Event);
+                    var @event = DeserializeEvent<IEventWithVersionId>(resolvedEvent.Event);
+
+                    @event.Version = resolvedEvent.Event.EventNumber;
 
                     obs.OnNext(@event);
 
@@ -74,6 +87,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
                     }
 
                 }, _eventStoreRepositoryConfiguration.UserCredentials, _eventStoreRepositoryConfiguration.BufferSize, _eventStoreRepositoryConfiguration.AutoAck);
+
 
                 return Disposable.Create(() =>
                 {
@@ -115,7 +129,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
                 foreach (var resolvedEvent in currentSlice.Events)
                 {
-                    var @event = DeserializeEvent(resolvedEvent.Event);
+                    var @event = DeserializeEvent<IEvent>(resolvedEvent.Event);
 
                     aggregate.Apply(@event);
 
@@ -177,7 +191,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
 
                 var catchUpSubscription = _eventStoreConnection.SubscribeToStreamFrom(streamId, position, settings, (eventStoreSubscription, resolvedEvent) =>
                 {
-                    var @event = DeserializeEvent(resolvedEvent.Event);
+                    var @event = DeserializeEvent<IEvent>(resolvedEvent.Event);
 
                     obs.OnNext(@event);
 
@@ -201,7 +215,7 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             {
                 var eventStoreSubscription = await _eventStoreConnection.SubscribeToStreamAsync(streamId, true, (subscription, resolvedEvent) =>
                 {
-                    var @event = DeserializeEvent(resolvedEvent.Event);
+                    var @event = DeserializeEvent<IEvent>(resolvedEvent.Event);
 
                     obs.OnNext(@event);
 
@@ -232,9 +246,9 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return _eventTypeCache[type];
         }
 
-        private IEvent DeserializeEvent(RecordedEvent evt)
+        private TEvent DeserializeEvent<TEvent>(RecordedEvent evt) where TEvent : class
         {
-            return _eventStoreRepositoryConfiguration.Serializer.DeserializeObject(evt.Data, GetEventType(evt.EventType)) as IEvent;
+            return _eventStoreRepositoryConfiguration.Serializer.DeserializeObject(evt.Data, GetEventType(evt.EventType)) as TEvent;
         }
 
         private IList<IList<EventData>> GetEventBatches(IEnumerable<EventData> events)

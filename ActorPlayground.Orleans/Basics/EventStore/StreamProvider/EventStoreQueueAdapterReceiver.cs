@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
+using Microsoft.Extensions.Logging;
 using Orleans.Providers.Streams.Common;
 using Orleans.Streams;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -56,17 +59,26 @@ namespace ActorPlayground.Orleans.Basics.EventStore
             return Task.CompletedTask;
         }
 
-        public Task Initialize(TimeSpan timeout)
+        public async Task Initialize(TimeSpan timeout)
         {
+            if (!_eventStoreRepository.IStarted)
+            {
+                await _eventStoreRepository.Connect(timeout);
+            }
 
-            _cleanUp = _eventStoreRepository.ObservePersistentSubscription(_providerName, _queueId.GetStringNamePrefix())
-                                .Subscribe(ev =>
-                                {
-                                    _receivedMessages.Enqueue(new EventStoreBatchContainer(Guid.Empty, "Harmony", ev));
-                                });
+            var group = _queueId.ToString();
 
-            return Task.CompletedTask;
+            await _eventStoreRepository.CreatePersistentSubscription(_providerName, group);
 
+            _cleanUp = _eventStoreRepository.ObservePersistentSubscription(_providerName, group)
+                .Subscribe(ev =>
+                {
+                    Debug.WriteLine($"{ev.StreamId} {ev.Version}");
+                    //todo: implement batch
+                    _receivedMessages.Enqueue(new EventStoreBatchContainer(Guid.Empty, ev.StreamId, ev, new EventStoreStreamSequenceToken(ev.Version)));
+                });
         }
+
+
     }
 }
